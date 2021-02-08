@@ -16,7 +16,7 @@
 <meta property="og:description" content="仓库地址：https:&#x2F;&#x2F;github.com&#x2F;pushinl&#x2F;Re-ZhihuDaily（个人开发中暂时private）">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2021-01-23T15:12:20.000Z">
-<meta property="article:modified_time" content="2021-02-03T02:26:49.936Z">
+<meta property="article:modified_time" content="2021-02-08T10:57:22.886Z">
 <meta property="article:author" content="Pushinl&#x2F;Row Srank">
 <meta property="article:tag" content="Android">
 <meta property="article:tag" content="Kotlin">
@@ -198,12 +198,19 @@
 <h1 id="DAY-2"><a href="#DAY-2" class="headerlink" title="DAY 2"></a>DAY 2</h1><p>准备使用Kotlin开发，所以先简单看了一下Kotlin的语法。</p>
 <p>然后分析了一下知乎日报的UI界面</p>
 <p>（我打开没有广告图</p>
-<p>上面一个banner轮播图，下面今日热闻RecyclerView，顶部下拉刷新，点开文章可以左右划（是fragment么？）左上角一个标里面是收藏和登录还有离线下载（？右上角三点开夜间模式和设置</p>
+<p>上面一个banner轮播图，下面今日热闻RecyclerView，顶部下拉刷新，左上角一个标里面是收藏和登录还有离线下载（？右上角三点开夜间模式和设置</p>
 <p>所以先写一个首页吧啦吧啦吧啦</p>
 <h1 id="DAY-3"><a href="#DAY-3" class="headerlink" title="DAY 3"></a>DAY 3</h1><p>出去玩了</p>
 <h1 id="DAY-4"><a href="#DAY-4" class="headerlink" title="DAY 4"></a>DAY 4</h1><p>在CTF新生赛划水</p>
+<h1 id="DAY-？"><a href="#DAY-？" class="headerlink" title="DAY ？"></a>DAY ？</h1><p>先开始UI界面设计</p>
+<h2 id="HomeActivity"><a href="#HomeActivity" class="headerlink" title="HomeActivity"></a>HomeActivity</h2><p>主界面，XML文件：</p>
+<p>用drawable做最外层布局，里面嵌套CoordinatorLayout（等价于FrameView），里面写了一个AppBarLayout（让recyclerview向下偏移避免挡住toolbar）和一个swipeRefresh（下拉刷新），AppBar里面写了一个Toolbar（使用toolbar需要改一下style.xml还有Manifest），Toolbar里写了右上角的设置和夜间模式。swipeRefresh里嵌套了recyclerView。CoordinatorLayout下面是个navigationView，绑定一个nav_menu.xml来填充drawable的侧边栏。</p>
+<p>写HomeActivity，Kotlin-Android-extensions被Google废弃了，所以必须得用ViewBinding来避免使用麻烦的findViewById。自己琢磨了半天。</p>
+<p>自定义一个News泛型。给recyclerView写一个Adapter。看不懂就只好套模板了。再写一个item，用CardView里面套约束布局做出来。</p>
+<p>再写一个NewsContentActivity，点recyclerView里的卡片时切换到这个Activity。</p>
+<p>目前就写了这么点。</p>
 <hr>
-<p>update on 2.1</p>
+<p>update on 2.8</p>
 
       
 
@@ -340,7 +347,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#DAY-INF"><span class="toc-number">1.</span> <span class="toc-text">DAY -INF</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#DAY-n"><span class="toc-number">2.</span> <span class="toc-text">DAY -n</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#DAY-0"><span class="toc-number">3.</span> <span class="toc-text">DAY 0</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#DAY-1"><span class="toc-number">4.</span> <span class="toc-text">DAY 1</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#DAY-2"><span class="toc-number">5.</span> <span class="toc-text">DAY 2</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#DAY-3"><span class="toc-number">6.</span> <span class="toc-text">DAY 3</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#DAY-4"><span class="toc-number">7.</span> <span class="toc-text">DAY 4</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#DAY-INF"><span class="toc-number">1.</span> <span class="toc-text">DAY -INF</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#DAY-n"><span class="toc-number">2.</span> <span class="toc-text">DAY -n</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#DAY-0"><span class="toc-number">3.</span> <span class="toc-text">DAY 0</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#DAY-1"><span class="toc-number">4.</span> <span class="toc-text">DAY 1</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#DAY-2"><span class="toc-number">5.</span> <span class="toc-text">DAY 2</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#DAY-3"><span class="toc-number">6.</span> <span class="toc-text">DAY 3</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#DAY-4"><span class="toc-number">7.</span> <span class="toc-text">DAY 4</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#DAY-%EF%BC%9F"><span class="toc-number">8.</span> <span class="toc-text">DAY ？</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#HomeActivity"><span class="toc-number">8.1.</span> <span class="toc-text">HomeActivity</span></a></li></ol></li></ol>
                     </div>
                 </span>
             </div>
