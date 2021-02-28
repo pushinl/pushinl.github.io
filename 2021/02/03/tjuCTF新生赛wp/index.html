@@ -16,7 +16,7 @@
 <meta property="og:description" content="作死零基础挑战CTF新生赛">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2021-02-03T02:26:26.000Z">
-<meta property="article:modified_time" content="2021-02-03T03:36:13.738Z">
+<meta property="article:modified_time" content="2021-02-17T10:34:54.687Z">
 <meta property="article:author" content="Pushinl&#x2F;Row Srank">
 <meta property="article:tag" content="CTF">
 <meta name="twitter:card" content="summary">
@@ -218,7 +218,8 @@
 <h1 id="Pwn"><a href="#Pwn" class="headerlink" title="Pwn"></a>Pwn</h1><h2 id="bypass"><a href="#bypass" class="headerlink" title="bypass"></a>bypass</h2><p>先用nc连上，看到提示，用find命令找，cat flag.txt打不开，就cat flag.c，发现限制了一堆命令还有长度。</p>
 <p>于是Google，发现有个命令叫od，长度刚好卡上，就输出flag.txt得到一堆八进制数，除去第一列，手动转成16进制连起来（最后一个数不够四位前面补个0）然后16进制转字符串，得到了这个</p>
 <p><code>jtCuFTb&#123;ybpyapsa_serda!y!!&#125;</code></p>
-<p>明显看到tjuCTF了，推断栅栏密码，在线解密+自己手推得到flag。</p>
+<p>明显看到tjuCTF了，类似栅栏密码，在线解密+自己手推得到flag。</p>
+<p>（补充：不是栅栏密码，是因为xxx原因导致每个16进制前后两位要交换一下。</p>
 
       
 
