@@ -6,20 +6,22 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="http://example.com">
-  <title>CTF-Web题目复现 | Pushinl</title>
+  <title>Web技能树 | Pushinl</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="简单做一些Web题。">
+  <meta name="description" content="啥也不会，好">
 <meta property="og:type" content="article">
-<meta property="og:title" content="CTF-Web题目复现">
-<meta property="og:url" content="http://example.com/2021/05/15/Web%E9%A2%98%E7%9B%AE%E5%A4%8D%E7%8E%B0/index.html">
+<meta property="og:title" content="Web技能树">
+<meta property="og:url" content="http://example.com/2021/05/25/Web%E9%A2%98%E7%9B%AE%E5%A4%8D%E7%8E%B0/index.html">
 <meta property="og:site_name" content="Pushinl">
-<meta property="og:description" content="简单做一些Web题。">
+<meta property="og:description" content="啥也不会，好">
 <meta property="og:locale" content="en_US">
-<meta property="article:published_time" content="2021-05-14T19:12:20.000Z">
-<meta property="article:modified_time" content="2021-05-16T03:18:57.627Z">
+<meta property="og:image" content="https://i.loli.net/2021/05/26/eDCQzhaT3NqYWt5.png">
+<meta property="article:published_time" content="2021-05-24T19:12:20.000Z">
+<meta property="article:modified_time" content="2021-05-26T15:23:08.785Z">
 <meta property="article:author" content="Pushinl&#x2F;Row Srank">
 <meta property="article:tag" content="CTF">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2021/05/26/eDCQzhaT3NqYWt5.png">
   
     <link rel="alternative" href="/atom.xml" title="Pushinl" type="application/atom+xml">
   
@@ -162,31 +164,41 @@
         
   
     <h1 class="article-title" itemprop="name">
-      CTF-Web题目复现
+      Web技能树
     </h1>
   
 
         
         
 
-<a href="/2021/05/15/Web%E9%A2%98%E7%9B%AE%E5%A4%8D%E7%8E%B0/" class="archive-article-date">
-  	<time datetime="2021-05-14T19:12:20.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-05-15</time>
+<a href="/2021/05/25/Web%E9%A2%98%E7%9B%AE%E5%A4%8D%E7%8E%B0/" class="archive-article-date">
+  	<time datetime="2021-05-24T19:12:20.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-05-25</time>
 </a>
         
       </header>
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>简单做一些Web题。</p>
+        <p>啥也不会，好</p>
 <a id="more"></a>
 
+<p>看了好几个oj，感觉CTFHub的技能树蛮不错，跟着这个做做吧</p>
+<p>目前在看的书：《CTF特训营》《黑客攻防技术宝典-Web实战篇》（矿难血亏一笔，从图书馆嗯嫖</p>
 <ul>
-<li>之前打了两三个线上赛都基本签到</li>
-<li>意识到没有学习还菜的一批害怕坑队友所以没报国赛</li>
-<li>美团CTF跟转专业考试撞了</li>
+<li>信息泄露</li>
+<li>密码口令</li>
+<li>SQL注入</li>
+<li>XSS</li>
+<li>文件上传 包含</li>
+<li>RCE</li>
+<li>SSRF</li>
+<li>more…</li>
 </ul>
-<p>做buuctf的Web</p>
-<h2 id="1-HCTF-2018-WarmUp"><a href="#1-HCTF-2018-WarmUp" class="headerlink" title="1 [HCTF 2018]WarmUp"></a>1 [HCTF 2018]WarmUp</h2><p>代码审计，打开源码看到source.php，打开</p>
+<h1 id="信息泄露"><a href="#信息泄露" class="headerlink" title="信息泄露"></a>信息泄露</h1><h2 id="目录遍历"><a href="#目录遍历" class="headerlink" title="目录遍历"></a>目录遍历</h2><p>如题目翻一遍目录</p>
+<h2 id="phpinfo"><a href="#phpinfo" class="headerlink" title="phpinfo"></a>phpinfo</h2><p>如题目翻一遍phpinfo</p>
+<h2 id="网站源码备份"><a href="#网站源码备份" class="headerlink" title="网站源码备份"></a>网站源码备份</h2><p><img src="https://i.loli.net/2021/05/26/eDCQzhaT3NqYWt5.png"></p>
+<p>下载下来<a target="_blank" rel="noopener" href="http://www.zip/">www.zip</a> 然后域名进到flag_47012235.txt就有了</p>
+<h2 id="bak"><a href="#bak" class="headerlink" title="bak"></a>bak</h2><p>御剑扫出来index.php.bak 记事本打开或者curl</p>
 
       
 
@@ -267,7 +279,7 @@
     <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="//pan.baidu.com/share/qrcode?url=http://example.com/2021/05/15/Web%E9%A2%98%E7%9B%AE%E5%A4%8D%E7%8E%B0/" alt="微信分享二维码">
+      <img src="//pan.baidu.com/share/qrcode?url=http://example.com/2021/05/25/Web%E9%A2%98%E7%9B%AE%E5%A4%8D%E7%8E%B0/" alt="微信分享二维码">
     </div>
 </div>
 
@@ -310,7 +322,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-HCTF-2018-WarmUp"><span class="toc-number">1.</span> <span class="toc-text">1 [HCTF 2018]WarmUp</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BF%A1%E6%81%AF%E6%B3%84%E9%9C%B2"><span class="toc-number">1.</span> <span class="toc-text">信息泄露</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%AE%E5%BD%95%E9%81%8D%E5%8E%86"><span class="toc-number">1.1.</span> <span class="toc-text">目录遍历</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#phpinfo"><span class="toc-number">1.2.</span> <span class="toc-text">phpinfo</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BD%91%E7%AB%99%E6%BA%90%E7%A0%81%E5%A4%87%E4%BB%BD"><span class="toc-number">1.3.</span> <span class="toc-text">网站源码备份</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#bak"><span class="toc-number">1.4.</span> <span class="toc-text">bak</span></a></li></ol></li></ol>
                     </div>
                 </span>
             </div>
