@@ -1,10 +1,11 @@
-const DATA_URL = "data/failure_onset_dashboard.json";
-const Z_95 = 1.96;
+const DATA_URLS = [
+  "data/jspace_trace_dashboard.json",
+  "../public/data/jspace_trace_dashboard.json",
+];
 
 const state = {
   traces: [],
   traceId: "",
-  checkpointId: "",
 };
 
 const elements = {
@@ -15,217 +16,179 @@ const elements = {
   traceVariant: document.querySelector("#traceVariant"),
   loadError: document.querySelector("#loadError"),
   loadErrorMessage: document.querySelector("#loadErrorMessage"),
-  replayTitle: document.querySelector("#replayTitle"),
-  verdictDetail: document.querySelector("#verdictDetail"),
-  verdictOrder: document.querySelector("#verdictOrder strong"),
-  markerText: document.querySelector("#markerText strong"),
-  markerRepr: document.querySelector("#markerRepr strong"),
-  markerDecision: document.querySelector("#markerDecision strong"),
-  markerLock: document.querySelector("#markerLock strong"),
-  failureKind: document.querySelector("#failureKind"),
   finalFailure: document.querySelector("#finalFailure"),
+  failureKind: document.querySelector("#failureKind"),
   counterexample: document.querySelector("#counterexample"),
-  judgeSummary: document.querySelector("#judgeSummary"),
-  signalVerdict: document.querySelector("#signalVerdict"),
-  reprReading: document.querySelector("#reprReading"),
-  lockReading: document.querySelector("#lockReading"),
-  viabilitySequence: document.querySelector("#viabilitySequence"),
-  timelinePlot: document.querySelector("#timelinePlot"),
-  checkpointTitle: document.querySelector("#checkpointTitle"),
-  checkpointStage: document.querySelector("#checkpointStage"),
-  passFraction: document.querySelector("#passFraction"),
-  passPercent: document.querySelector("#passPercent"),
-  passCi: document.querySelector("#passCi"),
-  passNumber: document.querySelector(".pass-number"),
-  branchDots: document.querySelector("#branchDots"),
-  contextPosition: document.querySelector("#contextPosition"),
-  checkpointContext: document.querySelector("#checkpointContext"),
-  jScoreShift: document.querySelector("#jScoreShift"),
-  jChangeLead: document.querySelector("#jChangeLead"),
-  reprBefore: document.querySelector("#reprBefore"),
-  reprAfter: document.querySelector("#reprAfter"),
-  conceptRiver: document.querySelector("#conceptRiver"),
-  addedMeta: document.querySelector("#addedMeta"),
-  removedMeta: document.querySelector("#removedMeta"),
-  changedMeta: document.querySelector("#changedMeta"),
-  addedConcepts: document.querySelector("#addedConcepts"),
-  removedConcepts: document.querySelector("#removedConcepts"),
-  changedConcepts: document.querySelector("#changedConcepts"),
+  errorWindow: document.querySelector("#errorWindow"),
+  errorObservation: document.querySelector("#errorObservation"),
+  journeySummary: document.querySelector("#journeySummary"),
+  stageRail: document.querySelector("#stageRail"),
+  stageSequence: document.querySelector("#stageSequence"),
   problemPrompt: document.querySelector("#problemPrompt"),
   responseText: document.querySelector("#responseText"),
+};
+
+const STATUS_LABELS = {
+  normal: "过程快照",
+  shift: "J-space 换挡",
+  uncertain: "定义尚未厘清",
+  error_visible: "首次看见走偏",
+  after_error: "错误继续",
+  final_failure: "最终失败",
+  resolved: "内容已经算对",
+};
+
+const STAGE_LABELS = {
+  reasoning: "思考过程",
+  "answer transition": "准备输出答案",
+  "final code": "最终代码",
+  "未闭合思考 / termination": "未闭合思考",
 };
 
 function isFiniteNumber(value) {
   return typeof value === "number" && Number.isFinite(value);
 }
 
-function measuredMarker(value) {
-  if (isFiniteNumber(value)) return { measured: true, position: value };
-  if (!value || typeof value !== "object") {
-    return { measured: false, position: null };
-  }
-  const status = String(value.measurement_status || value.status || "")
-    .toLowerCase()
-    .replaceAll("-", "_");
-  if (
-    status.includes("unmeasured") ||
-    status.includes("not_measured") ||
-    status.includes("missing") ||
-    status.includes("not_run")
-  ) {
-    return { measured: false, position: null };
-  }
-  const position = [
-    value.position,
-    value.token_index,
-    value.token,
-    value.t,
-  ].find(isFiniteNumber);
-  return {
-    measured: isFiniteNumber(position),
-    position: isFiniteNumber(position) ? position : null,
-  };
-}
-
-function wilsonInterval(successes, total) {
-  if (
-    !isFiniteNumber(successes) ||
-    !isFiniteNumber(total) ||
-    total <= 0 ||
-    successes < 0 ||
-    successes > total
-  ) {
-    return null;
-  }
-  const p = successes / total;
-  const z2 = Z_95 * Z_95;
-  const denominator = 1 + z2 / total;
-  const center = p + z2 / (2 * total);
-  const spread =
-    Z_95 *
-    Math.sqrt((p * (1 - p)) / total + z2 / (4 * total * total));
-  return {
-    low: Math.max(0, (center - spread) / denominator),
-    high: Math.min(1, (center + spread) / denominator),
-  };
-}
-
 function normalizeConcept(concept, index) {
   if (typeof concept === "string") {
-    return { id: `${concept}-${index}`, label: concept, score: null, maxZ: null };
+    return {
+      id: `label:${concept}:${index}`,
+      tokenId: null,
+      label: concept,
+      score: null,
+      rank: index + 1,
+      zScore: null,
+    };
   }
   if (!concept || typeof concept !== "object") return null;
-  const label = concept.label ?? concept.concept ?? concept.token ?? concept.text;
+  const label = concept.label ?? concept.decoded ?? concept.token ?? concept.text;
   if (label === undefined || label === null || label === "") return null;
+  const tokenId = isFiniteNumber(concept.token_id) ? concept.token_id : null;
   return {
-    id: `${String(label)}-${index}`,
+    id: tokenId === null ? `label:${String(label)}:${index}` : `token:${tokenId}`,
+    tokenId,
     label: String(label),
     score: isFiniteNumber(concept.score) ? concept.score : null,
-    maxZ: isFiniteNumber(concept.max_z_score) ? concept.max_z_score : null,
+    rank: isFiniteNumber(concept.rank) ? concept.rank : index + 1,
+    zScore: isFiniteNumber(concept.z_score)
+      ? concept.z_score
+      : isFiniteNumber(concept.max_z_score)
+        ? concept.max_z_score
+        : null,
   };
 }
 
-function normalizeCheckpoint(checkpoint, index) {
+function normalizeLayers(value) {
+  if (!value || typeof value !== "object") return [];
+  return Object.entries(value)
+    .map(([layer, concepts]) => ({
+      layer: Number(layer),
+      concepts: Array.isArray(concepts)
+        ? concepts.map(normalizeConcept).filter(Boolean)
+        : [],
+    }))
+    .filter((entry) => Number.isFinite(entry.layer))
+    .sort((left, right) => left.layer - right.layer);
+}
+
+function normalizeCheckpoint(checkpoint, index, outputTokens) {
   const position = isFiniteNumber(checkpoint?.token_index)
     ? checkpoint.token_index
     : null;
-  const passCount = isFiniteNumber(checkpoint?.pass_count)
-    ? checkpoint.pass_count
-    : null;
-  const sampleCount = isFiniteNumber(checkpoint?.sample_count)
-    ? checkpoint.sample_count
-    : null;
-  const passRate =
-    passCount !== null && sampleCount !== null && sampleCount > 0
-      ? passCount / sampleCount
-      : null;
   const concepts = Array.isArray(checkpoint?.jlens?.top_concepts)
-    ? checkpoint.jlens.top_concepts
-        .map(normalizeConcept)
-        .filter(Boolean)
+    ? checkpoint.jlens.top_concepts.map(normalizeConcept).filter(Boolean)
     : [];
+  const review =
+    checkpoint?.review && typeof checkpoint.review === "object"
+      ? checkpoint.review
+      : {};
   return {
     id: String(
-      checkpoint?.checkpoint_id ??
-        (position !== null ? `t-${position}` : `checkpoint-${index + 1}`),
+      checkpoint?.stage_id ?? checkpoint?.checkpoint_id ?? `stage-${index + 1}`,
     ),
     position,
-    passCount,
-    sampleCount,
-    passRate,
-    ci: wilsonInterval(passCount, sampleCount),
-    stage:
-      typeof checkpoint?.stage === "string" && checkpoint.stage
-        ? checkpoint.stage
-        : "",
-    context:
-      typeof checkpoint?.context === "string" ? checkpoint.context : "",
-    candidateScore: isFiniteNumber(checkpoint?.jlens?.concept_score)
-      ? checkpoint.jlens.concept_score
-      : null,
+    scanPosition: isFiniteNumber(checkpoint?.jlens?.nearest_scan_output_offset)
+      ? checkpoint.jlens.nearest_scan_output_offset
+      : position,
+    progress:
+      position !== null && outputTokens > 0
+        ? Math.max(0, Math.min(1, position / outputTokens))
+        : null,
+    semanticStage:
+      typeof checkpoint?.stage === "string" ? checkpoint.stage : "",
+    context: typeof checkpoint?.context === "string" ? checkpoint.context : "",
     concepts,
+    layers: normalizeLayers(checkpoint?.jlens?.layers),
+    review: {
+      title:
+        typeof review.title === "string" && review.title
+          ? review.title
+          : `输出阶段 ${index + 1}`,
+      reading:
+        typeof review.reading === "string" && review.reading
+          ? review.reading
+          : "这个阶段尚未完成人工语义复核。",
+      status:
+        typeof review.status === "string" && review.status
+          ? review.status
+          : "normal",
+    },
   };
 }
 
 function normalizeTrace(trace, index) {
-  const checkpoints = Array.isArray(trace?.checkpoints)
-    ? trace.checkpoints
-        .map(normalizeCheckpoint)
-        .sort((a, b) => {
-          if (a.position === null) return 1;
-          if (b.position === null) return -1;
-          return a.position - b.position;
-        })
-    : [];
-  const domainStart = isFiniteNumber(trace?.domain?.start)
-    ? trace.domain.start
-    : checkpoints.find((checkpoint) => checkpoint.position !== null)?.position ?? 0;
-  const lastPosition = [...checkpoints]
-    .reverse()
-    .find((checkpoint) => checkpoint.position !== null)?.position;
-  const domainEnd = isFiniteNumber(trace?.domain?.end)
-    ? trace.domain.end
-    : lastPosition ?? domainStart;
-  const review =
+  const outputTokens = isFiniteNumber(trace?.output_tokens)
+    ? trace.output_tokens
+    : 0;
+  const humanReview =
     trace?.human_review && typeof trace.human_review === "object"
       ? trace.human_review
       : {};
-  const reviewText = (key) =>
-    typeof review[key] === "string" ? review[key] : "";
+  const text = (key) =>
+    typeof humanReview[key] === "string" ? humanReview[key] : "";
   return {
     id: String(trace?.trace_id ?? `trace-${index + 1}`),
     label: String(trace?.display_name ?? trace?.task_id ?? `Trace ${index + 1}`),
     taskId: String(trace?.task_id ?? ""),
     model: String(trace?.model ?? ""),
     variant: String(trace?.variant ?? ""),
-    description: String(trace?.description ?? ""),
+    outputTokens,
     prompt:
       typeof trace?.problem_prompt === "string" ? trace.problem_prompt : "",
     response:
       typeof trace?.response_text === "string" ? trace.response_text : "",
-    humanReview: {
-      heroRank: isFiniteNumber(review.hero_rank)
-        ? review.hero_rank
+    review: {
+      heroRank: isFiniteNumber(humanReview.hero_rank)
+        ? humanReview.hero_rank
         : Number.POSITIVE_INFINITY,
-      answer: reviewText("answer"),
-      failureKind: reviewText("failure_kind"),
-      finalFailure: reviewText("final_failure"),
-      signalVerdict: reviewText("signal_verdict"),
-      counterexample: reviewText("counterexample"),
-      judgeSummary: reviewText("judge_summary"),
-      reprBefore: reviewText("repr_before"),
-      reprAfter: reviewText("repr_after"),
-      reprReading: reviewText("repr_reading"),
-      lockReading: reviewText("lock_in_reading"),
-      viabilitySequence: reviewText("viability_sequence"),
+      journeySummary: text("journey_summary"),
+      errorWindow: text("error_window"),
+      errorObservation: text("error_observation"),
+      failureKind: text("failure_kind"),
+      finalFailure: text("final_failure"),
+      counterexample: text("counterexample"),
     },
-    tText: measuredMarker(trace?.t_text),
-    tRepr: measuredMarker(trace?.t_repr),
-    tDecision: measuredMarker(trace?.t_decision),
-    tLock: measuredMarker(trace?.t_lock_in),
-    domainStart,
-    domainEnd: Math.max(domainStart, domainEnd),
-    checkpoints,
+    checkpoints: Array.isArray(trace?.jspace_stages)
+      ? trace.jspace_stages
+          .map((checkpoint, checkpointIndex) =>
+            normalizeCheckpoint(checkpoint, checkpointIndex, outputTokens),
+          )
+          .sort((left, right) => {
+            if (left.position === null) return 1;
+            if (right.position === null) return -1;
+            return left.position - right.position;
+          })
+      : Array.isArray(trace?.checkpoints)
+        ? trace.checkpoints
+          .map((checkpoint, checkpointIndex) =>
+            normalizeCheckpoint(checkpoint, checkpointIndex, outputTokens),
+          )
+          .sort((left, right) => {
+            if (left.position === null) return 1;
+            if (right.position === null) return -1;
+            return left.position - right.position;
+          })
+        : [],
   };
 }
 
@@ -233,66 +196,49 @@ function traceById() {
   return state.traces.find((trace) => trace.id === state.traceId) ?? null;
 }
 
-function checkpointById(trace) {
-  return (
-    trace?.checkpoints.find((checkpoint) => checkpoint.id === state.checkpointId) ??
-    trace?.checkpoints[0] ??
-    null
-  );
+function visibleToken(label) {
+  const value = String(label)
+    .replaceAll("\n", "↵")
+    .replaceAll("\r", "↵")
+    .replaceAll("\t", "⇥");
+  const leading = value.match(/^ +/)?.[0].length ?? 0;
+  return `${"␠".repeat(leading)}${value.slice(leading)}` || "∅";
 }
 
-function scalePosition(trace, position) {
-  if (!isFiniteNumber(position)) return null;
-  if (trace.domainEnd === trace.domainStart) return 50;
-  return Math.max(
-    0,
-    Math.min(
-      100,
-      ((position - trace.domainStart) /
-        (trace.domainEnd - trace.domainStart)) *
-        100,
-    ),
-  );
+function percent(value) {
+  return isFiniteNumber(value) ? `${Math.round(value * 100)}%` : "—";
 }
 
-function formatPercent(value) {
-  if (!isFiniteNumber(value)) return "未测量";
-  return `${(value * 100).toFixed(value === 0 || value === 1 ? 0 : 1)}%`;
+function semanticLabel(value) {
+  return STAGE_LABELS[value] || value || "输出过程";
 }
 
-function formatScore(value) {
-  return isFiniteNumber(value) ? value.toFixed(3) : "未测量";
+function variantLabel(value) {
+  if (value === "completed-code failure") return "代码答案错误";
+  if (value === "termination failure") return "未输出代码";
+  return value || "失败 trace";
 }
 
-function visibleConcept(label) {
-  const text = String(label).replaceAll("\n", "↵").replaceAll("\t", "⇥");
-  const leading = text.match(/^ +/)?.[0].length ?? 0;
-  return `${"␠".repeat(leading)}${text.slice(leading)}` || "∅";
+function statusLabel(value) {
+  return STATUS_LABELS[value] || "过程快照";
 }
 
-function setHeaderStatus(kind, text) {
+function setHeaderStatus(kind, message) {
   elements.headerStatus.className = `header-status ${kind}`;
-  elements.headerStatus.querySelector("span").textContent = text;
+  elements.headerStatus.querySelector("span").textContent = message;
 }
 
-function defaultCheckpoint(trace) {
-  if (!trace) return null;
-  const preferredMarker = trace.tLock.measured ? trace.tLock : trace.tRepr;
-  if (preferredMarker.measured) {
-    const exact = trace.checkpoints.find(
-      (checkpoint) => checkpoint.position === preferredMarker.position,
-    );
-    if (exact) return exact;
-    const nearest = [...trace.checkpoints]
-      .filter((checkpoint) => checkpoint.position !== null)
-      .sort(
-        (a, b) =>
-          Math.abs(a.position - preferredMarker.position) -
-          Math.abs(b.position - preferredMarker.position),
-      )[0];
-    if (nearest) return nearest;
+function appendTokenChip(container, concept, className = "") {
+  const chip = document.createElement("code");
+  chip.className = `token-chip${className ? ` ${className}` : ""}`;
+  chip.textContent = visibleToken(concept.label);
+  if (concept.score !== null || concept.zScore !== null) {
+    const score =
+      concept.score !== null ? `aggregate ${concept.score.toFixed(3)}` : "";
+    const z = concept.zScore !== null ? `z ${concept.zScore.toFixed(2)}` : "";
+    chip.title = [score, z].filter(Boolean).join(" · ");
   }
-  return trace.checkpoints[0] ?? null;
+  container.append(chip);
 }
 
 function renderTraceOptions() {
@@ -307,512 +253,349 @@ function renderTraceOptions() {
   elements.traceSelect.value = state.traceId;
 }
 
-function renderVerdict(trace) {
-  elements.modelName.textContent = trace.model || "模型未测量";
+function renderSummary(trace) {
+  elements.modelName.textContent = trace.model || "模型未标注";
   elements.taskId.textContent = trace.taskId || trace.id;
-  elements.traceVariant.textContent = trace.variant || "失败 trace";
-  elements.markerText.textContent = trace.tText.measured
-    ? `t=${trace.tText.position}`
-    : "未测量";
-  elements.markerRepr.textContent = trace.tRepr.measured
-    ? `t=${trace.tRepr.position}`
-    : "未测量";
-  elements.markerDecision.textContent = trace.tDecision.measured
-    ? `t=${trace.tDecision.position}`
-    : "未测量";
-  elements.markerLock.textContent = trace.tLock.measured
-    ? `t=${trace.tLock.position}`
-    : "未测量";
-
-  const reviewedAnswer = trace.humanReview.answer;
-  if (trace.tRepr.measured && trace.tLock.measured) {
-    if (trace.tLock.position === 0) {
-      elements.replayTitle.textContent =
-        reviewedAnswer ||
-        `这条轨迹从 t=0 起已经锁死；到 t=${trace.tRepr.position} 才观察到 J-space 异常候选。`;
-      elements.verdictDetail.textContent =
-        "8 次分支从起点就全部失败，因此这里不能把较晚出现的表征信号解释成造成 lock-in 的先行证据。";
-      elements.verdictOrder.textContent =
-        `t_lock-in=0 → t_repr=${trace.tRepr.position}`;
-    } else if (trace.tRepr.position < trace.tLock.position) {
-      const delta = trace.tLock.position - trace.tRepr.position;
-      elements.replayTitle.textContent =
-        reviewedAnswer ||
-        `J-space 在 t=${trace.tRepr.position} 开始异常；到 t=${trace.tLock.position}，轨迹失去恢复能力。`;
-      elements.verdictDetail.textContent =
-        `表征候选领先 lock-in ${delta} 个 output token；这是一段值得加密采样和干预的风险窗口，不是因果结论。`;
-      elements.verdictOrder.textContent =
-        `t_repr=${trace.tRepr.position} → Δ${delta} → t_lock-in=${trace.tLock.position}`;
-    } else {
-      elements.replayTitle.textContent =
-        reviewedAnswer ||
-        `轨迹在 t=${trace.tLock.position} 锁死；J-space 候选到 t=${trace.tRepr.position} 才出现。`;
-      elements.verdictDetail.textContent =
-        "表征候选没有领先于失去恢复能力，不能作为早期预警信号。";
-      elements.verdictOrder.textContent =
-        `t_lock-in=${trace.tLock.position} → t_repr=${trace.tRepr.position}`;
-    }
-  } else {
-    elements.replayTitle.textContent = "关键 onset 尚未完整测量。";
-    elements.verdictDetail.textContent =
-      "页面不会用文本分叉、checkpoint 曲线或其他 trace 的数值补齐缺失 marker。";
-    elements.verdictOrder.textContent = "未测量";
-  }
-
-  elements.failureKind.textContent =
-    trace.humanReview.failureKind || "未测量";
+  elements.traceVariant.textContent = variantLabel(trace.variant);
   elements.finalFailure.textContent =
-    trace.humanReview.finalFailure || "未测量";
+    trace.review.finalFailure || "最终失败原因尚未完成人工复核。";
+  elements.failureKind.textContent =
+    trace.review.failureKind || "失败类型未标注";
   elements.counterexample.textContent =
-    trace.humanReview.counterexample || "未测量";
-  elements.judgeSummary.textContent =
-    trace.humanReview.judgeSummary || "未测量";
-  elements.signalVerdict.textContent =
-    trace.humanReview.signalVerdict || "未测量";
-  elements.reprReading.textContent =
-    trace.humanReview.reprReading || "J-space 人工复核未测量。";
-  elements.lockReading.textContent =
-    trace.humanReview.lockReading || "lock-in 人工复核未测量。";
-  elements.viabilitySequence.textContent = trace.humanReview.viabilitySequence
-    ? `viability · ${trace.humanReview.viabilitySequence}`
-    : "viability · 未测量";
+    trace.review.counterexample || "未提供";
+  elements.errorWindow.textContent =
+    trace.review.errorWindow || "现有数据无法定位";
+  elements.errorObservation.textContent =
+    trace.review.errorObservation ||
+    "页面不会仅凭 Top-token 自动猜测错误起点。";
+  elements.journeySummary.textContent =
+    trace.review.journeySummary ||
+    "沿六个输出快照比较原文与 J-space 词汇方向。";
 }
 
-function addMarkerLine(plot, trace, marker, label, className) {
-  if (!marker.measured) return;
-  const left = scalePosition(trace, marker.position);
-  const line = document.createElement("div");
-  const edge = left < 7 ? " edge-start" : left > 93 ? " edge-end" : "";
-  line.className = `timeline-marker-line ${className}${edge}`;
-  line.style.left = `${left}%`;
-  const tag = document.createElement("span");
-  tag.textContent = `${label} · t=${marker.position}`;
-  line.append(tag);
-  plot.append(line);
+function stageAnchor(index) {
+  return `stage-${index + 1}`;
 }
 
-function addZone(track, start, end, className) {
-  if (end <= start) return;
-  const zone = document.createElement("div");
-  zone.className = `recovery-zone ${className}`;
-  zone.style.left = `${start}%`;
-  zone.style.width = `${end - start}%`;
-  track.append(zone);
-}
-
-function renderTimeline(trace, selectedCheckpoint) {
-  const plot = elements.timelinePlot;
-  plot.replaceChildren();
-
-  const content = document.createElement("div");
-  content.className = "timeline-content";
-  const track = document.createElement("div");
-  track.className = "recovery-track";
-  const reprPercent = trace.tRepr.measured
-    ? scalePosition(trace, trace.tRepr.position)
-    : null;
-  const lockPercent = trace.tLock.measured
-    ? scalePosition(trace, trace.tLock.position)
-    : null;
-
-  if (lockPercent !== null) {
-    const riskStart =
-      reprPercent !== null && reprPercent < lockPercent
-        ? reprPercent
-        : lockPercent;
-    addZone(track, 0, riskStart, "green");
-    addZone(track, riskStart, lockPercent, "yellow");
-    addZone(track, lockPercent, 100, "red");
-  } else if (reprPercent !== null) {
-    addZone(track, 0, reprPercent, "green");
-    addZone(track, reprPercent, 100, "yellow");
-  } else {
-    addZone(track, 0, 100, "green");
-  }
-  content.append(track);
-
-  addMarkerLine(content, trace, trace.tRepr, "t_repr", "");
-  addMarkerLine(content, trace, trace.tLock, "t_lock-in", "lock");
-
-  trace.checkpoints
-    .filter((checkpoint) => checkpoint.position !== null)
-    .forEach((checkpoint) => {
-      const left = scalePosition(trace, checkpoint.position);
-      const button = document.createElement("button");
-      const riskClass =
-        checkpoint.passRate === 0
-          ? "locked"
-          : checkpoint.passRate !== null && checkpoint.passRate <= 0.25
-            ? "risk"
-            : "";
-      button.className =
-        `checkpoint-dot ${riskClass}` +
-        (selectedCheckpoint?.id === checkpoint.id ? " selected" : "");
-      button.style.left = `${left}%`;
-      button.type = "button";
-      button.textContent =
-        checkpoint.passCount !== null && checkpoint.sampleCount !== null
-          ? `${checkpoint.passCount}/${checkpoint.sampleCount}`
-          : "—";
-      button.setAttribute(
-        "aria-label",
-        `查看 t=${checkpoint.position} checkpoint，通过率 ${formatPercent(
-          checkpoint.passRate,
-        )}`,
-      );
-      button.addEventListener("click", () => {
-        state.checkpointId = checkpoint.id;
-        renderCheckpointSelection();
-      });
-      content.append(button);
-
-      const tick = document.createElement("span");
-      tick.className = "checkpoint-tick";
-      tick.style.left = `${left}%`;
-      tick.textContent = `t=${checkpoint.position}`;
-      content.append(tick);
-    });
-
-  const start = document.createElement("span");
-  start.className = "axis-end start";
-  start.textContent = `start · t=${trace.domainStart}`;
-  const end = document.createElement("span");
-  end.className = "axis-end end";
-  end.textContent = `end · t=${trace.domainEnd}`;
-  plot.append(content, start, end);
-}
-
-function renderCheckpoint(checkpoint) {
-  if (!checkpoint) {
-    elements.checkpointTitle.textContent = "t=—";
-    elements.checkpointStage.textContent = "未测量";
-    elements.passFraction.textContent = "—/—";
-    elements.passPercent.textContent = "未测量";
-    elements.passCi.textContent = "95% Wilson CI · 未测量";
-    elements.passNumber.classList.remove("zero");
-    elements.branchDots.replaceChildren();
-    elements.contextPosition.textContent = "position 未测量";
-    elements.checkpointContext.textContent = "未测量";
-    return;
-  }
-  elements.checkpointTitle.textContent =
-    checkpoint.position === null ? "t=未测量" : `t=${checkpoint.position}`;
-  elements.checkpointStage.textContent = checkpoint.stage || "未测量";
-  elements.passFraction.textContent =
-    checkpoint.passCount !== null && checkpoint.sampleCount !== null
-      ? `${checkpoint.passCount}/${checkpoint.sampleCount}`
-      : "—/—";
-  elements.passPercent.textContent = formatPercent(checkpoint.passRate);
-  elements.passCi.textContent = checkpoint.ci
-    ? `95% Wilson CI · ${formatPercent(checkpoint.ci.low)}–${formatPercent(
-        checkpoint.ci.high,
-      )}`
-    : "95% Wilson CI · 未测量";
-  elements.passNumber.classList.toggle("zero", checkpoint.passRate === 0);
-  elements.contextPosition.textContent =
-    checkpoint.position === null
-      ? "position 未测量"
-      : `output token ${checkpoint.position}`;
-  elements.checkpointContext.textContent = checkpoint.context || "未测量";
-
-  elements.branchDots.replaceChildren();
-  if (
-    checkpoint.passCount !== null &&
-    checkpoint.sampleCount !== null &&
-    checkpoint.sampleCount > 0
-  ) {
-    for (let index = 0; index < checkpoint.sampleCount; index += 1) {
-      const dot = document.createElement("i");
-      if (index < checkpoint.passCount) dot.className = "pass";
-      dot.setAttribute("aria-hidden", "true");
-      elements.branchDots.append(dot);
-    }
-    elements.branchDots.setAttribute(
+function renderStageRail(trace) {
+  elements.stageRail.replaceChildren();
+  trace.checkpoints.forEach((checkpoint, index) => {
+    const link = document.createElement("a");
+    link.href = `#${stageAnchor(index)}`;
+    link.className = `rail-stage status-${checkpoint.review.status}`;
+    link.setAttribute(
       "aria-label",
-      `${checkpoint.passCount} 个通过，${
-        checkpoint.sampleCount - checkpoint.passCount
-      } 个失败`,
+      `跳转到第 ${index + 1} 阶段：${checkpoint.review.title}`,
     );
-  } else {
-    elements.branchDots.setAttribute("aria-label", "分支结果未测量");
+
+    const top = document.createElement("span");
+    const number = document.createElement("b");
+    number.textContent = String(index + 1).padStart(2, "0");
+    const progress = document.createElement("small");
+    progress.textContent = percent(checkpoint.progress);
+    top.append(number, progress);
+
+    const title = document.createElement("strong");
+    title.textContent = checkpoint.review.title;
+
+    const words = document.createElement("em");
+    const labels = checkpoint.concepts
+      .slice(0, 2)
+      .map((concept) => visibleToken(concept.label));
+    words.textContent = labels.length ? labels.join(" · ") : "无可读代表词";
+
+    link.append(top, title, words);
+    elements.stageRail.append(link);
+  });
+}
+
+function renderTokenRanking(checkpoint) {
+  const list = document.createElement("ol");
+  list.className = "jspace-token-list";
+  if (!checkpoint.concepts.length) {
+    const empty = document.createElement("li");
+    empty.className = "empty";
+    empty.textContent = "此快照没有可读的聚合代表词";
+    list.append(empty);
+    return list;
   }
+  checkpoint.concepts.slice(0, 8).forEach((concept, index) => {
+    const item = document.createElement("li");
+    const rank = document.createElement("span");
+    rank.className = "token-rank";
+    rank.textContent = String(index + 1).padStart(2, "0");
+    const token = document.createElement("code");
+    token.textContent = visibleToken(concept.label);
+    if (concept.score !== null || concept.zScore !== null) {
+      const aggregate =
+        concept.score !== null
+          ? `aggregate ${concept.score.toFixed(3)}`
+          : "";
+      const z =
+        concept.zScore !== null ? `max z ${concept.zScore.toFixed(2)}` : "";
+      token.title = [aggregate, z].filter(Boolean).join(" · ");
+    }
+    item.append(rank, token);
+    list.append(item);
+  });
+  return list;
+}
+
+function renderLayerDetails(checkpoint) {
+  const details = document.createElement("details");
+  details.className = "layer-details";
+  const summary = document.createElement("summary");
+  summary.textContent = "展开查看 L8–L24 的逐层原始词汇";
+  details.append(summary);
+
+  const rows = document.createElement("div");
+  rows.className = "layer-rows";
+  checkpoint.layers.forEach(({ layer, concepts }) => {
+    const row = document.createElement("div");
+    row.className = "layer-row";
+    const label = document.createElement("strong");
+    label.textContent = `L${layer}`;
+    const tokens = document.createElement("div");
+    if (!concepts.length) {
+      const empty = document.createElement("i");
+      empty.textContent = "无可读词汇";
+      tokens.append(empty);
+    } else {
+      concepts.slice(0, 5).forEach((concept) => {
+        appendTokenChip(tokens, concept);
+      });
+    }
+    row.append(label, tokens);
+    rows.append(row);
+  });
+  if (!checkpoint.layers.length) {
+    const empty = document.createElement("p");
+    empty.className = "layer-empty";
+    empty.textContent = "这个快照没有逐层数据。";
+    rows.append(empty);
+  }
+  details.append(rows);
+  return details;
+}
+
+function renderStageCard(trace, checkpoint, index) {
+  const card = document.createElement("article");
+  card.className = `stage-card status-${checkpoint.review.status}`;
+  card.id = stageAnchor(index);
+
+  const head = document.createElement("header");
+  head.className = "stage-card-head";
+  const number = document.createElement("span");
+  number.className = "stage-index";
+  number.textContent = String(index + 1).padStart(2, "0");
+
+  const heading = document.createElement("div");
+  const kicker = document.createElement("p");
+  kicker.className = "eyebrow";
+  kicker.textContent = `${semanticLabel(checkpoint.semanticStage)} · ${percent(
+    checkpoint.progress,
+  )}`;
+  const title = document.createElement("h2");
+  title.textContent = checkpoint.review.title;
+  heading.append(kicker, title);
+
+  const meta = document.createElement("div");
+  meta.className = "stage-meta";
+  const status = document.createElement("span");
+  status.className = "stage-status";
+  status.textContent = statusLabel(checkpoint.review.status);
+  const position = document.createElement("code");
+  position.textContent =
+    checkpoint.position === null
+      ? "输出位置未记录"
+      : `输出 ${checkpoint.position} / ${trace.outputTokens} token`;
+  meta.append(status, position);
+  head.append(number, heading, meta);
+
+  const body = document.createElement("div");
+  body.className = "stage-card-grid";
+
+  const context = document.createElement("section");
+  context.className = "context-window";
+  const contextHead = document.createElement("header");
+  const contextTitle = document.createElement("strong");
+  contextTitle.textContent = "该位置附近的原文窗口";
+  const contextMeta = document.createElement("small");
+  contextMeta.textContent =
+    checkpoint.scanPosition === checkpoint.position
+      ? "TEXT SNAPSHOT"
+      : `J-LENS SCAN ≈ ${checkpoint.scanPosition}`;
+  contextHead.append(contextTitle, contextMeta);
+  const pre = document.createElement("pre");
+  pre.tabIndex = 0;
+  pre.textContent = checkpoint.context || "此位置没有可显示的原文窗口。";
+  context.append(contextHead, pre);
+
+  const jspace = document.createElement("section");
+  jspace.className = "jspace-window";
+  const jspaceHead = document.createElement("header");
+  const jspaceTitle = document.createElement("strong");
+  jspaceTitle.textContent = "J-space 代表词（跨层聚合）";
+  const jspaceMeta = document.createElement("small");
+  jspaceMeta.textContent = "BASIC JACOBIAN LENS";
+  jspaceHead.append(jspaceTitle, jspaceMeta);
+  jspace.append(jspaceHead, renderTokenRanking(checkpoint));
+
+  const reading = document.createElement("p");
+  reading.className = "stage-reading";
+  reading.textContent = checkpoint.review.reading;
+  jspace.append(reading, renderLayerDetails(checkpoint));
+
+  body.append(context, jspace);
+  card.append(head, body);
+  return card;
 }
 
 function conceptMap(checkpoint) {
-  const map = new Map();
-  checkpoint?.concepts.forEach((concept, index) => {
-    const key = concept.label;
-    if (!map.has(key)) map.set(key, { ...concept, rank: index + 1 });
-  });
-  return map;
+  return new Map(checkpoint.concepts.map((concept) => [concept.id, concept]));
 }
 
-function fillConceptList(list, entries, kind) {
-  list.replaceChildren();
-  if (!entries.length) {
-    const empty = document.createElement("li");
-    empty.className = "empty";
-    empty.textContent =
-      kind === "changed" ? "没有共同概念，无法计算同名分数变化" : "没有观测到";
-    list.append(empty);
+function renderDeltaTokens(container, concepts, className) {
+  if (!concepts.length) {
+    const empty = document.createElement("i");
+    empty.textContent = "没有可显示的变化项";
+    container.append(empty);
     return;
   }
-  entries.slice(0, 7).forEach((entry, index) => {
-    const item = document.createElement("li");
-    const rank = document.createElement("span");
-    rank.className = "rank";
-    rank.textContent = String(index + 1).padStart(2, "0");
-    const label = document.createElement("span");
-    label.className = "concept-label";
-    label.textContent = visibleConcept(entry.label);
-    const value = document.createElement("span");
-    value.className = "concept-value";
-    if (kind === "changed") {
-      const sign = entry.delta > 0 ? "+" : "";
-      value.textContent = `${sign}${entry.delta.toFixed(3)}`;
-    } else {
-      value.textContent = isFiniteNumber(entry.score)
-        ? `score ${entry.score.toFixed(3)}`
-        : "score 未测量";
-    }
-    item.append(rank, label, value);
-    list.append(item);
+  concepts.slice(0, 6).forEach((concept) => {
+    appendTokenChip(container, concept, className);
   });
 }
 
-function renderJChange(trace) {
-  elements.reprBefore.textContent =
-    trace.humanReview.reprBefore || "未测量";
-  elements.reprAfter.textContent =
-    trace.humanReview.reprAfter || "未测量";
-  if (!trace.tRepr.measured || !trace.checkpoints.length) {
-    elements.jScoreShift.textContent = "未测量";
-    elements.jChangeLead.textContent =
-      "t_repr 未测量，页面不会选择替代 checkpoint 伪造前后对比。";
-    elements.addedMeta.textContent = "未测量";
-    elements.removedMeta.textContent = "未测量";
-    elements.changedMeta.textContent = "未测量";
-    fillConceptList(elements.addedConcepts, [], "added");
-    fillConceptList(elements.removedConcepts, [], "removed");
-    fillConceptList(elements.changedConcepts, [], "changed");
-    return;
-  }
-  const at =
-    trace.checkpoints.find(
-      (checkpoint) => checkpoint.position === trace.tRepr.position,
-    ) ??
-    [...trace.checkpoints]
-      .filter((checkpoint) => checkpoint.position !== null)
-      .sort(
-        (a, b) =>
-          Math.abs(a.position - trace.tRepr.position) -
-          Math.abs(b.position - trace.tRepr.position),
-      )[0];
-  const before = [...trace.checkpoints]
-    .filter(
-      (checkpoint) =>
-        checkpoint.position !== null &&
-        at?.position !== null &&
-        checkpoint.position < at.position,
-    )
-    .sort((a, b) => b.position - a.position)[0];
-
-  if (!at || !before) {
-    elements.jScoreShift.textContent = "未测量";
-    elements.jChangeLead.textContent =
-      "t_repr 前没有可用 checkpoint，无法构造真实的前后对比。";
-    elements.addedMeta.textContent = "未测量";
-    elements.removedMeta.textContent = "未测量";
-    elements.changedMeta.textContent = "未测量";
-    fillConceptList(elements.addedConcepts, [], "added");
-    fillConceptList(elements.removedConcepts, [], "removed");
-    fillConceptList(elements.changedConcepts, [], "changed");
-    return;
-  }
-
+function renderTransition(before, after, index) {
   const beforeMap = conceptMap(before);
-  const atMap = conceptMap(at);
-  const added = [...atMap.entries()]
-    .filter(([label]) => !beforeMap.has(label))
-    .map(([, concept]) => concept)
-    .sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity));
-  const removed = [...beforeMap.entries()]
-    .filter(([label]) => !atMap.has(label))
-    .map(([, concept]) => concept)
-    .sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity));
-  const changed = [...atMap.entries()]
-    .filter(
-      ([label, concept]) =>
-        beforeMap.has(label) &&
-        isFiniteNumber(concept.score) &&
-        isFiniteNumber(beforeMap.get(label).score),
-    )
-    .map(([label, concept]) => ({
-      label,
-      delta: concept.score - beforeMap.get(label).score,
-    }))
-    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+  const afterMap = conceptMap(after);
+  const entered = after.concepts.filter((concept) => !beforeMap.has(concept.id));
+  const exited = before.concepts.filter((concept) => !afterMap.has(concept.id));
 
-  elements.jScoreShift.textContent =
-    `${formatScore(before.candidateScore)} → ${formatScore(at.candidateScore)}`;
-  const reviewedShift =
-    trace.humanReview.reprBefore && trace.humanReview.reprAfter
-      ? `人工复核：${trace.humanReview.reprBefore} → ${trace.humanReview.reprAfter}。`
-      : "";
-  elements.jChangeLead.textContent =
-    `${reviewedShift}比较 t=${before.position} 与 t=${at.position}：进入 ${added.length} 个、退出 ${removed.length} 个、共同概念 ${changed.length} 个。列表只展示变化最大的前 7 项。`;
-  elements.addedMeta.textContent = `t=${at.position} 新出现 · ${added.length} 项`;
-  elements.removedMeta.textContent = `自 t=${before.position} 消失 · ${removed.length} 项`;
-  elements.changedMeta.textContent = `同名概念 · ${changed.length} 项`;
-  fillConceptList(elements.addedConcepts, added, "added");
-  fillConceptList(elements.removedConcepts, removed, "removed");
-  fillConceptList(elements.changedConcepts, changed, "changed");
+  const transition = document.createElement("aside");
+  transition.className = "stage-transition";
+  transition.setAttribute(
+    "aria-label",
+    `第 ${index + 1} 到第 ${index + 2} 阶段的 J-space 变化`,
+  );
+
+  const head = document.createElement("header");
+  const order = document.createElement("strong");
+  order.textContent =
+    `${String(index + 1).padStart(2, "0")} → ${String(index + 2).padStart(2, "0")}`;
+  const label = document.createElement("span");
+  label.textContent = "相邻阶段的词汇方向变化";
+  head.append(order, label);
+
+  const grid = document.createElement("div");
+  grid.className = "transition-grid";
+  const enteredBlock = document.createElement("section");
+  const enteredLabel = document.createElement("b");
+  enteredLabel.textContent = "+ 新进入";
+  const enteredTokens = document.createElement("div");
+  renderDeltaTokens(enteredTokens, entered, "entered");
+  enteredBlock.append(enteredLabel, enteredTokens);
+
+  const exitedBlock = document.createElement("section");
+  const exitedLabel = document.createElement("b");
+  exitedLabel.textContent = "− 退出";
+  const exitedTokens = document.createElement("div");
+  renderDeltaTokens(exitedTokens, exited, "exited");
+  exitedBlock.append(exitedLabel, exitedTokens);
+  grid.append(enteredBlock, exitedBlock);
+
+  transition.append(head, grid);
+  return transition;
 }
 
-function riverConcepts(checkpoint) {
-  const seen = new Set();
-  const labels = [];
-  checkpoint.concepts.forEach((concept) => {
-    const label = String(concept.label || "").trim();
-    const key = label.toLocaleLowerCase();
-    if (!label || seen.has(key)) return;
-    seen.add(key);
-    labels.push(label);
+function renderStageSequence(trace) {
+  elements.stageSequence.replaceChildren();
+  if (!trace.checkpoints.length) {
+    const empty = document.createElement("div");
+    empty.className = "sequence-placeholder";
+    empty.textContent = "这条 trace 没有可显示的 J-space 快照。";
+    elements.stageSequence.append(empty);
+    return;
+  }
+  trace.checkpoints.forEach((checkpoint, index) => {
+    elements.stageSequence.append(
+      renderStageCard(trace, checkpoint, index),
+    );
+    if (index < trace.checkpoints.length - 1) {
+      elements.stageSequence.append(
+        renderTransition(checkpoint, trace.checkpoints[index + 1], index),
+      );
+    }
   });
-  return labels.slice(0, 3);
-}
-
-function renderConceptRiver(trace) {
-  elements.conceptRiver.replaceChildren();
-  trace.checkpoints.forEach((checkpoint) => {
-    const card = document.createElement("button");
-    card.type = "button";
-    card.className = "river-card";
-    if (checkpoint.passCount === 0) card.classList.add("zero");
-    if (
-      trace.tRepr.measured &&
-      checkpoint.position === trace.tRepr.position
-    ) {
-      card.classList.add("repr");
-    }
-    if (
-      trace.tLock.measured &&
-      checkpoint.position === trace.tLock.position
-    ) {
-      card.classList.add("lock");
-    }
-    if (checkpoint.id === state.checkpointId) card.classList.add("selected");
-
-    const head = document.createElement("span");
-    head.className = "river-card-head";
-    head.textContent =
-      `t=${checkpoint.position ?? "—"} · ${checkpoint.passCount ?? "—"}/${checkpoint.sampleCount ?? "—"}`;
-    card.append(head);
-
-    const list = document.createElement("span");
-    list.className = "river-concepts";
-    const labels = riverConcepts(checkpoint);
-    if (!labels.length) {
-      const empty = document.createElement("i");
-      empty.textContent = "无可读 Top-token";
-      list.append(empty);
-    } else {
-      labels.forEach((label) => {
-        const item = document.createElement("b");
-        item.textContent = visibleConcept(label);
-        list.append(item);
-      });
-    }
-    card.append(list);
-
-    const stage = document.createElement("small");
-    stage.textContent = checkpoint.stage || "阶段未测量";
-    card.append(stage);
-    card.addEventListener("click", () => {
-      state.checkpointId = checkpoint.id;
-      renderCheckpointSelection();
-    });
-    elements.conceptRiver.append(card);
-  });
-}
-
-function renderCheckpointSelection() {
-  const trace = traceById();
-  if (!trace) return;
-  const checkpoint = checkpointById(trace);
-  if (checkpoint) state.checkpointId = checkpoint.id;
-  renderTimeline(trace, checkpoint);
-  renderCheckpoint(checkpoint);
-  renderConceptRiver(trace);
 }
 
 function renderTrace() {
   const trace = traceById();
   if (!trace) return;
-  const checkpoint = defaultCheckpoint(trace);
-  state.checkpointId = checkpoint?.id ?? "";
   renderTraceOptions();
-  renderVerdict(trace);
-  renderTimeline(trace, checkpoint);
-  renderCheckpoint(checkpoint);
-  renderJChange(trace);
-  renderConceptRiver(trace);
-  elements.problemPrompt.textContent = trace.prompt || "未测量";
-  elements.responseText.textContent = trace.response || "未测量";
+  renderSummary(trace);
+  renderStageRail(trace);
+  renderStageSequence(trace);
+  elements.problemPrompt.textContent =
+    trace.prompt || "这条 trace 没有原始题面。";
+  elements.responseText.textContent =
+    trace.response || "这条 trace 没有完整输出文本。";
 }
 
-function showLoadError(error) {
-  state.traces = [];
-  state.traceId = "";
-  state.checkpointId = "";
-  elements.traceSelect.replaceChildren();
-  const option = document.createElement("option");
-  option.textContent = "数据未载入";
-  elements.traceSelect.append(option);
-  elements.traceSelect.disabled = true;
-  elements.loadError.hidden = false;
-  elements.loadErrorMessage.textContent =
-    `${error?.message || "未知错误"}。请确认相对路径 ${DATA_URL} 可访问。`;
-  setHeaderStatus("error", "实验数据未载入");
-  elements.replayTitle.textContent = "无法回答：trace 数据未载入。";
-  elements.verdictDetail.textContent =
-    "静态镜像不包含伪造 fallback，也不会借用其他页面的数据。";
-  elements.verdictOrder.textContent = "未测量";
-  elements.markerRepr.textContent = "未测量";
-  elements.markerLock.textContent = "未测量";
-  elements.timelinePlot.innerHTML =
-    '<div class="timeline-placeholder">checkpoint 未测量</div>';
-}
-
-async function loadData() {
+async function loadDashboard() {
   try {
-    const response = await fetch(DATA_URL, { cache: "no-store" });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const payload = await response.json();
+    let payload = null;
+    const failures = [];
+    for (const url of DATA_URLS) {
+      try {
+        const response = await fetch(url, { cache: "no-store" });
+        if (!response.ok) {
+          failures.push(`${url}: HTTP ${response.status}`);
+          continue;
+        }
+        payload = await response.json();
+        break;
+      } catch (error) {
+        failures.push(`${url}: ${error instanceof Error ? error.message : error}`);
+      }
+    }
+    if (!payload) {
+      throw new Error(failures.join("；"));
+    }
     if (!Array.isArray(payload?.traces) || payload.traces.length === 0) {
       throw new Error("JSON 中没有 traces");
     }
     state.traces = payload.traces
-      .filter((trace) => trace && typeof trace === "object")
       .map(normalizeTrace)
-      .sort(
-        (a, b) =>
-          a.humanReview.heroRank - b.humanReview.heroRank ||
-          a.id.localeCompare(b.id),
-      );
-    if (!state.traces.length) throw new Error("没有可读 trace");
+      .sort((left, right) => left.review.heroRank - right.review.heroRank);
     state.traceId = state.traces[0].id;
     elements.loadError.hidden = true;
-    setHeaderStatus("ready", `${state.traces.length} 条 trace 已载入`);
     renderTrace();
+    const stageCount = state.traces.reduce(
+      (total, trace) => total + trace.checkpoints.length,
+      0,
+    );
+    setHeaderStatus(
+      "ready",
+      `${state.traces.length} 条 trace · ${stageCount} 个 J-space 快照`,
+    );
   } catch (error) {
-    showLoadError(error);
+    elements.loadError.hidden = false;
+    elements.loadErrorMessage.textContent =
+      error instanceof Error ? error.message : String(error);
+    elements.traceSelect.disabled = true;
+    setHeaderStatus("error", "实验数据载入失败");
   }
 }
 
 elements.traceSelect.addEventListener("change", (event) => {
   state.traceId = event.target.value;
   renderTrace();
+  document.querySelector("#replay")?.scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  });
 });
 
-loadData();
+loadDashboard();
