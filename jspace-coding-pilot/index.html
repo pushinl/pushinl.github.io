@@ -5,164 +5,300 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="Qwen3.5-4B 三条真实 coding 失败 trace 的 J-lens 与前缀可恢复性分析"
+      content="Qwen3.5-4B coding 失败轨迹回放：条件通过率、J-space 表征候选与 lock-in。"
     />
-    <title>Qwen3.5-4B Failure Onset · J-space</title>
+    <meta name="theme-color" content="#101b22" />
+    <title>Qwen3.5-4B · Coding 故障回放</title>
     <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="app.js"></script>
   </head>
   <body>
-    <div class="ambient ambient-a"></div>
-    <div class="ambient ambient-b"></div>
+    <a class="skip-link" href="#replay">跳到故障回放</a>
+
     <header class="site-header">
-      <a class="brand" href="./" aria-label="返回页面顶部">
-        <span class="brand-mark">J</span>
+      <a class="brand" href="#top" aria-label="回到页面顶部">
+        <span class="brand-mark" aria-hidden="true">J</span>
         <span>
-          <strong>Failure Onset</strong>
-          <small>Qwen3.5-4B · coding trace</small>
+          <strong>Coding 故障回放</strong>
+          <small>QWEN3.5-4B · FAILURE ONSET</small>
         </span>
       </a>
-      <div class="access-badge">
-        <span></span>
-        公开镜像 · 无需登录
+      <div class="header-status" id="headerStatus" role="status" aria-live="polite">
+        <i aria-hidden="true"></i>
+        <span>正在读取实验数据</span>
       </div>
     </header>
 
-    <main>
-      <section class="hero">
-        <div>
-          <p class="eyebrow">WHOLE-TRACE J-LENS × EXACT-PREFIX BRANCHING</p>
-          <h1>失败不是一个点，<br /><em>而是一段证据逐渐闭合的过程。</em></h1>
-          <p class="lede">
-            三条 Qwen3.5-4B 真实 coding 失败轨迹。用 basic Jacobian-lens
-            追踪可读概念变化，再从精确前缀重新采样和判题，区分表征异常候选与持续不可恢复。
+    <main id="top">
+      <section class="hero shell" aria-labelledby="pageTitle">
+        <div class="hero-copy">
+          <p class="eyebrow">CONCLUSION-FIRST TRACE REVIEW</p>
+          <h1 id="pageTitle">模型从哪里开始异常，<br />又在哪里彻底锁死？</h1>
+          <p class="hero-lead">
+            把 8 次 prefix branching 的通过率、J-space 候选变化和完整原文放在一条时间线上。
+            先回答“发生在何处”，再展开方法与局限。
           </p>
         </div>
-        <div class="hero-stats" aria-label="实验规模">
-          <article><strong>3</strong><span>失败 trace</span></article>
-          <article><strong>882</strong><span>轨迹位置</span></article>
-          <article><strong>7,056</strong><span>J-lens 读出</span></article>
-          <article><strong>144</strong><span>真实分支判题</span></article>
-        </div>
+        <aside class="hero-key">
+          <span>读图顺序</span>
+          <ol>
+            <li><b>先看一句话结论</b><small>表征候选与 lock-in 谁先发生</small></li>
+            <li><b>再点时间轴</b><small>核对每个 prefix 的 8 次分支</small></li>
+            <li><b>最后看 J-space 前后</b><small>只比较 t_repr 相邻 checkpoint</small></li>
+          </ol>
+        </aside>
       </section>
 
-      <section class="method-strip" aria-label="方法边界">
-        <div><b>t<sub>repr</sub></b><span>观察性表征异常候选</span></div>
-        <div><b>t<sub>lock-in</sub></b><span>当前策略下持续低可恢复</span></div>
-        <div><b>t<sub>decision</sub></b><span>需替代动作干预，本轮未测量</span></div>
-      </section>
-
-      <section class="cockpit" aria-labelledby="cockpit-title">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">FAILURE ONSET COCKPIT</p>
-            <h2 id="cockpit-title">选择一条失败轨迹</h2>
+      <section class="shell replay" id="replay" aria-labelledby="replayTitle">
+        <div class="trace-toolbar">
+          <label class="trace-picker">
+            <span>选择失败 TRACE</span>
+            <select id="traceSelect" disabled aria-label="选择失败 trace">
+              <option>载入中…</option>
+            </select>
+          </label>
+          <div class="trace-identity">
+            <span id="modelName">—</span>
+            <code id="taskId">—</code>
+            <span id="traceVariant">—</span>
           </div>
-          <p id="load-status" class="load-status" role="status">正在加载公开数据…</p>
+          <div class="source-status">
+            <span>数据源</span>
+            <code>data/failure_onset_dashboard.json</code>
+          </div>
         </div>
 
-        <div id="trace-tabs" class="trace-tabs" role="tablist" aria-label="失败轨迹"></div>
-        <div id="trace-view" class="trace-view" hidden>
-          <div class="trace-intro">
+        <div class="load-error" id="loadError" hidden role="alert">
+          <strong>实验数据未能载入</strong>
+          <p id="loadErrorMessage">请确认 JSON 与页面位于约定的相对路径。</p>
+        </div>
+
+        <article class="verdict-card" id="verdictCard" aria-labelledby="replayTitle">
+          <div class="verdict-index" aria-hidden="true">01</div>
+          <div class="verdict-main">
+            <p class="eyebrow">这条轨迹的一句话回答</p>
+            <h2 id="replayTitle">等待实验数据…</h2>
+            <p id="verdictDetail">页面不会在数据缺失时猜测 onset。</p>
+          </div>
+          <div class="verdict-order" id="verdictOrder">
+            <span>顺序</span>
+            <strong>未测量</strong>
+          </div>
+        </article>
+
+        <div class="marker-grid" aria-label="四类失败起点">
+          <article class="marker-card unmeasured" id="markerText">
+            <span>t_text</span>
+            <strong>未测量</strong>
+            <small>第一次可观察文本分叉</small>
+          </article>
+          <article class="marker-card repr" id="markerRepr">
+            <span>t_repr</span>
+            <strong>载入中</strong>
+            <small>J-space 词汇集合翻转候选（观察性）</small>
+          </article>
+          <article class="marker-card unmeasured" id="markerDecision">
+            <span>t_decision</span>
+            <strong>未测量</strong>
+            <small>替代行动干预尚未运行</small>
+          </article>
+          <article class="marker-card lock" id="markerLock">
+            <span>t_lock-in</span>
+            <strong>载入中</strong>
+            <small>此后采样续写未再成功</small>
+          </article>
+        </div>
+
+        <section class="review-card" aria-labelledby="reviewTitle">
+          <div class="review-label">
+            <span>人工复核</span>
+            <small>HUMAN TRACE REVIEW · 非因果归因</small>
+          </div>
+          <div class="review-failure">
+            <div class="review-title-row">
+              <h2 id="reviewTitle">最终错在哪里</h2>
+              <span id="failureKind">未测量</span>
+            </div>
+            <p id="finalFailure">未测量</p>
+            <div class="review-proof">
+              <span>最小反例 <code id="counterexample">未测量</code></span>
+              <span>Judge <code id="judgeSummary">未测量</code></span>
+            </div>
+          </div>
+          <div class="review-why">
+            <h3>为什么这条线重要</h3>
+            <strong id="signalVerdict">未测量</strong>
+            <p id="reprReading">未测量</p>
+            <p id="lockReading">未测量</p>
+            <code id="viabilitySequence">viability · 未测量</code>
+          </div>
+        </section>
+
+        <section class="timeline-panel" aria-labelledby="timelineTitle">
+          <div class="panel-heading">
             <div>
-              <p id="trace-domain" class="eyebrow"></p>
-              <h3 id="trace-title"></h3>
-              <p id="trace-description"></p>
+              <p class="eyebrow">FULL-LENGTH RECOVERY MAP</p>
+              <h2 id="timelineTitle">一条轴看完整失败过程</h2>
             </div>
-            <div id="trace-outcome" class="outcome-pill"></div>
+            <div class="timeline-legend" aria-label="时间轴图例">
+              <span><i class="recoverable"></i>仍可恢复</span>
+              <span><i class="risk"></i>J-space 候选出现后</span>
+              <span><i class="locked"></i>采样续写持续失败</span>
+              <span><i class="repr-line"></i>t_repr</span>
+            </div>
           </div>
+          <p class="timeline-help">
+            圆点显示该 prefix 的通过数 / 8；点击任一 checkpoint，同步查看原文上下文和 Wilson 区间。
+          </p>
+          <div class="timeline-scroll" tabindex="0" aria-label="可横向滚动的失败轨迹时间轴">
+            <div class="timeline-plot" id="timelinePlot" role="group" aria-label="失败轨迹 checkpoint">
+              <div class="timeline-placeholder">正在绘制实测 checkpoint…</div>
+            </div>
+          </div>
+        </section>
 
-          <div id="marker-grid" class="marker-grid"></div>
+        <section class="checkpoint-panel" aria-labelledby="checkpointTitle">
+          <div class="checkpoint-summary">
+            <p class="eyebrow">SELECTED CHECKPOINT</p>
+            <div class="checkpoint-title-row">
+              <h2 id="checkpointTitle">t=—</h2>
+              <span id="checkpointStage">未测量</span>
+            </div>
+            <div class="pass-readout">
+              <div class="pass-number">
+                <strong id="passFraction">—/—</strong>
+                <span>分支通过</span>
+              </div>
+              <div class="pass-copy">
+                <strong id="passPercent">未测量</strong>
+                <span id="passCi">95% Wilson CI · 未测量</span>
+              </div>
+            </div>
+            <div class="branch-dots" id="branchDots" aria-label="分支通过与失败计数"></div>
+            <p class="aggregate-note">每个格子只表达聚合数量，不对应某条具名 continuation。</p>
+          </div>
+          <div class="checkpoint-context">
+            <div class="context-head">
+              <span>该时刻模型已经写下什么</span>
+              <code id="contextPosition">position 未测量</code>
+            </div>
+            <pre id="checkpointContext" tabindex="0">未测量</pre>
+          </div>
+        </section>
 
-          <div class="panel timeline-panel">
-            <div class="panel-heading">
+        <section class="j-change-panel" aria-labelledby="jChangeTitle">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">BEFORE → t_repr</p>
+              <h2 id="jChangeTitle">J-space 词汇方向怎么变</h2>
+            </div>
+            <div class="j-score-shift">
+              <span>candidate score</span>
+              <strong id="jScoreShift">未测量</strong>
+            </div>
+          </div>
+          <p class="j-change-lead" id="jChangeLead">
+            只比较 t_repr 前一个 checkpoint 与 t_repr checkpoint，避免把所有 token 堆成词云。
+          </p>
+          <div class="semantic-shift" aria-label="人工归纳的 J-space 词汇方向变化">
+            <div>
+              <small>t_repr 之前 · 人工归纳</small>
+              <strong id="reprBefore">未测量</strong>
+            </div>
+            <span aria-hidden="true">→</span>
+            <div>
+              <small>t_repr 时 · 人工归纳</small>
+              <strong id="reprAfter">未测量</strong>
+            </div>
+          </div>
+          <div class="concept-river-block">
+            <div class="concept-river-heading">
               <div>
-                <p class="eyebrow">PREFIX VIABILITY</p>
-                <h3>从每个精确前缀重新续写</h3>
+                <strong>整个 trace 的 J-space 词汇轨迹</strong>
+                <small>每列是一个实测 checkpoint，展示跨层聚合 Top-token；点击可同步原文。</small>
               </div>
-              <p>每点 8 次 · 阴影范围为 95% Wilson 区间</p>
+              <span>绿色仍有成功续写 · 红色为 0/8</span>
             </div>
-            <div id="timeline" class="timeline" aria-label="前缀可恢复性时间线"></div>
+            <div class="concept-river" id="conceptRiver" aria-label="完整 J-space 词汇轨迹"></div>
           </div>
-
-          <div class="detail-grid">
-            <article class="panel checkpoint-panel">
-              <div class="panel-heading compact">
-                <div>
-                  <p class="eyebrow">SELECTED CHECKPOINT</p>
-                  <h3 id="checkpoint-title">—</h3>
-                </div>
-                <span id="checkpoint-rate" class="rate-badge">—</span>
-              </div>
-              <div id="checkpoint-meta" class="checkpoint-meta"></div>
-              <h4>跨层 J-lens 概念</h4>
-              <div id="concepts" class="concepts"></div>
-              <h4>该位置附近的真实上下文</h4>
-              <pre id="checkpoint-context" class="context-block"></pre>
+          <div class="concept-diff-grid">
+            <article class="concept-column added">
+              <header>
+                <span aria-hidden="true">+</span>
+                <div><strong>新进入的 Top-token</strong><small id="addedMeta">未测量</small></div>
+              </header>
+              <ol id="addedConcepts"><li class="empty">未测量</li></ol>
             </article>
-
-            <aside class="panel evidence-panel">
-              <p class="eyebrow">HOW TO READ</p>
-              <h3>证据边界</h3>
-              <ul>
-                <li><b>t<sub>repr</sub></b> 是 top concepts 时间变化的任务内异常候选，不是错误分类器。</li>
-                <li><b>t<sub>lock-in</sub></b> 要求从该点起所有已测前缀的 Wilson 上界持续 ≤ 0.35。</li>
-                <li>它只针对本轮自然续写策略和有限样本，不等于任何干预都无法修复。</li>
-                <li><b>t<sub>text</sub></b> 与 <b>t<sub>decision</sub></b> 未被数据支持时始终显示“未测量”。</li>
-              </ul>
-              <div id="trace-note" class="trace-note"></div>
-            </aside>
+            <article class="concept-column removed">
+              <header>
+                <span aria-hidden="true">−</span>
+                <div><strong>退出的 Top-token</strong><small id="removedMeta">未测量</small></div>
+              </header>
+              <ol id="removedConcepts"><li class="empty">未测量</li></ol>
+            </article>
+            <article class="concept-column changed">
+              <header>
+                <span aria-hidden="true">Δ</span>
+                <div><strong>共同概念的分数变化</strong><small id="changedMeta">未测量</small></div>
+              </header>
+              <ol id="changedConcepts"><li class="empty">未测量</li></ol>
+            </article>
           </div>
+          <p class="proxy-note">
+            这些是跨层聚合的 J-lens Top-token 词汇方向，不等于模型的“具体思维”，也不单独构成错误证据。
+          </p>
+        </section>
 
+        <section class="source-panel" aria-labelledby="sourceTitle">
+          <div class="panel-heading compact">
+            <div>
+              <p class="eyebrow">SOURCE TEXT</p>
+              <h2 id="sourceTitle">回到原题与完整失败 trace</h2>
+            </div>
+          </div>
           <div class="source-grid">
-            <details class="panel source-panel">
-              <summary>查看原始 coding 题</summary>
-              <pre id="problem-prompt"></pre>
+            <details>
+              <summary>查看原始 coding 题 <span>problem_prompt</span></summary>
+              <pre id="problemPrompt" tabindex="0">未测量</pre>
             </details>
-            <details class="panel source-panel">
-              <summary>查看完整失败 trace</summary>
-              <pre id="response-text"></pre>
+            <details>
+              <summary>查看完整失败 trace <span>response_text</span></summary>
+              <pre id="responseText" tabindex="0">未测量</pre>
             </details>
           </div>
-        </div>
+        </section>
 
-        <div id="load-error" class="load-error" hidden>
-          <strong>数据加载失败</strong>
-          <p></p>
-          <button type="button" id="retry-button">重新加载</button>
-        </div>
-      </section>
+        <aside class="evidence-boundary" aria-labelledby="boundaryTitle">
+          <div>
+            <p class="eyebrow">EVIDENCE BOUNDARY</p>
+            <h2 id="boundaryTitle">这张图能回答“何时”，还不能证明“为什么”</h2>
+          </div>
+          <ul>
+            <li><strong>已测量：</strong>6 个 prefix 的 8 次分支、t_repr 候选、t_lock-in 与局部 J-lens readout。</li>
+            <li><strong>未测量：</strong>t_text 与 t_decision；页面不会从文本或曲线自动补出。</li>
+            <li><strong>不可声称：</strong>J-space 变化导致了错误，或 Top concepts 就是模型内部的完整算法状态。</li>
+          </ul>
+        </aside>
 
-      <section class="result-summary">
-        <p class="eyebrow">FIRST THREE TRACES</p>
-        <h2>当前最值得继续验证的信号</h2>
-        <div class="result-cards">
-          <article>
-            <span>Mbpp/16</span>
-            <strong>242 → 727</strong>
-            <p>表征异常候选比 policy-relative lock-in 早约 485 token。</p>
-          </article>
-          <article>
-            <span>Mbpp/125</span>
-            <strong>202 → 700</strong>
-            <p>表征异常候选比 policy-relative lock-in 早约 498 token。</p>
-          </article>
-          <article>
-            <span>Mbpp/137</span>
-            <strong>lock-in = 0</strong>
-            <p>从 prompt 边界就是 0/8；后续 t=614 的变化不能称为首次失败。</p>
-          </article>
-        </div>
+        <details class="method-details">
+          <summary>展开方法术语与判定口径</summary>
+          <div class="method-grid">
+            <div><strong>Prefix branching</strong><p>冻结某一 prefix，独立采样 8 条 continuation，并用真实 judge 统计通过数。</p></div>
+            <div><strong>Wilson interval</strong><p>用 95% Wilson score interval 表达 8 次二项采样的不确定性；小样本下不会把点估计当成确定事实。</p></div>
+            <div><strong>t_repr</strong><p>相邻离散 checkpoint 的 Top-token 集合首次达到翻转阈值；它只是观察性候选，不等于错误开始。</p></div>
+            <div><strong>t_lock-in</strong><p>从该 checkpoint 起，实测后续的成功率 Wilson 上界持续不高于 0.35；只针对当前自然续写采样。</p></div>
+          </div>
+        </details>
       </section>
     </main>
 
     <footer>
-      <p>Basic J-lens readout: <code>unembed(Jₗ hₗ)</code> · 不是 sparse non-negative J-space。</p>
-      <nav>
-        <a href="https://github.com/anthropics/jacobian-lens" target="_blank" rel="noreferrer">Jacobian Lens</a>
-        <a href="https://transformer-circuits.pub/2026/workspace/index.html" target="_blank" rel="noreferrer">Workspace report</a>
-        <a href="https://huggingface.co/Qwen/Qwen3.5-4B" target="_blank" rel="noreferrer">Qwen3.5-4B</a>
-      </nav>
+      <span>Qwen3.5-4B · coding failure onset pilot</span>
+      <a href="#top">回到顶部 ↑</a>
     </footer>
-    <script src="app.js" defer></script>
+
+    <noscript>
+      <div class="noscript">此静态回放需要 JavaScript 才能读取实验 JSON。</div>
+    </noscript>
   </body>
 </html>
