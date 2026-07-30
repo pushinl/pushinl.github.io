@@ -1,0 +1,896 @@
+{
+  "schema_version": 2,
+  "generated_at": "2026-07-30T16:25:57.882685+00:00",
+  "title": "Qwen3.5-4B · J-space correctness exploration",
+  "study": {
+    "model": "Qwen3.5-4B",
+    "benchmark": "MBPP+",
+    "tasks_sampled": 10,
+    "samples_per_task": 8,
+    "trajectories": 80,
+    "correct_trajectories": 19,
+    "failed_trajectories": 61,
+    "mixed_outcome_tasks": 6,
+    "mixed_trajectories": 48,
+    "source_layer": 24,
+    "exact_prefix_rows": 477
+  },
+  "causal_gate": {
+    "status": "pass",
+    "rows_recomputed": 477,
+    "same_prefix_different_suffix_groups": 18,
+    "all_bitwise_invariant": true
+  },
+  "paired_timeline": [
+    {
+      "offset": 0,
+      "J": {
+        "brier": 0.25,
+        "accuracy": 0.5
+      },
+      "raw": {
+        "brier": 0.25,
+        "accuracy": 0.5
+      },
+      "logit": {
+        "brier": 0.25,
+        "accuracy": 0.5
+      },
+      "surface": {
+        "brier": 0.25,
+        "accuracy": 0.5
+      }
+    },
+    {
+      "offset": 16,
+      "J": {
+        "brier": 0.2656755902188651,
+        "accuracy": 0.23750000000000002
+      },
+      "raw": {
+        "brier": 0.26131851244190624,
+        "accuracy": 0.3180555555555556
+      },
+      "logit": {
+        "brier": 0.24766211142214836,
+        "accuracy": 0.6597222222222222
+      },
+      "surface": {
+        "brier": 0.2556888318939246,
+        "accuracy": 0.4875
+      }
+    },
+    {
+      "offset": 32,
+      "J": {
+        "brier": 0.2573612345962096,
+        "accuracy": 0.3847222222222222
+      },
+      "raw": {
+        "brier": 0.2569933530783765,
+        "accuracy": 0.41250000000000003
+      },
+      "logit": {
+        "brier": 0.25041366022249073,
+        "accuracy": 0.46249999999999997
+      },
+      "surface": {
+        "brier": 0.25077086893778766,
+        "accuracy": 0.5069444444444444
+      }
+    },
+    {
+      "offset": 64,
+      "J": {
+        "brier": 0.226347871359134,
+        "accuracy": 0.6805555555555555
+      },
+      "raw": {
+        "brier": 0.2484272779674355,
+        "accuracy": 0.5694444444444444
+      },
+      "logit": {
+        "brier": 0.25079801409356844,
+        "accuracy": 0.45
+      },
+      "surface": {
+        "brier": 0.2513195513266044,
+        "accuracy": 0.3416666666666666
+      }
+    },
+    {
+      "offset": 96,
+      "J": {
+        "brier": 0.27391034663976505,
+        "accuracy": 0.48888888888888893
+      },
+      "raw": {
+        "brier": 0.2683830015818544,
+        "accuracy": 0.48055555555555557
+      },
+      "logit": {
+        "brier": 0.25022105262287464,
+        "accuracy": 0.3277777777777778
+      },
+      "surface": {
+        "brier": 0.25460430788431476,
+        "accuracy": 0.35000000000000003
+      }
+    },
+    {
+      "offset": 128,
+      "J": {
+        "brier": 0.21234763776403123,
+        "accuracy": 0.6694444444444444
+      },
+      "raw": {
+        "brier": 0.22766275076731043,
+        "accuracy": 0.6194444444444445
+      },
+      "logit": {
+        "brier": 0.245255222686754,
+        "accuracy": 0.6722222222222222
+      },
+      "surface": {
+        "brier": 0.2574525256229518,
+        "accuracy": 0.41944444444444445
+      }
+    },
+    {
+      "offset": 192,
+      "J": {
+        "brier": 0.2562251159281564,
+        "accuracy": 0.3527777777777778
+      },
+      "raw": {
+        "brier": 0.2605108330009445,
+        "accuracy": 0.48333333333333334
+      },
+      "logit": {
+        "brier": 0.25052722363596386,
+        "accuracy": 0.5972222222222222
+      },
+      "surface": {
+        "brier": 0.25766555674131675,
+        "accuracy": 0.5666666666666667
+      }
+    },
+    {
+      "offset": 256,
+      "J": {
+        "brier": 0.19714796178311186,
+        "accuracy": 0.7277777777777779
+      },
+      "raw": {
+        "brier": 0.2411082424345733,
+        "accuracy": 0.5833333333333334
+      },
+      "logit": {
+        "brier": 0.2513925062656452,
+        "accuracy": 0.375
+      },
+      "surface": {
+        "brier": 0.256029126495149,
+        "accuracy": 0.5833333333333334
+      }
+    },
+    {
+      "offset": 384,
+      "J": {
+        "brier": 0.26787604479426536,
+        "accuracy": 0.4694444444444444
+      },
+      "raw": {
+        "brier": 0.2548332364164034,
+        "accuracy": 0.5416666666666666
+      },
+      "logit": {
+        "brier": 0.25129617145544175,
+        "accuracy": 0.5194444444444445
+      },
+      "surface": {
+        "brier": 0.25603272484511574,
+        "accuracy": 0.5638888888888889
+      }
+    },
+    {
+      "offset": 512,
+      "J": {
+        "brier": 0.26092485777185986,
+        "accuracy": 0.5916666666666667
+      },
+      "raw": {
+        "brier": 0.22256654729203093,
+        "accuracy": 0.7361111111111112
+      },
+      "logit": {
+        "brier": 0.24628748970647008,
+        "accuracy": 0.7097222222222221
+      },
+      "surface": {
+        "brier": 0.25956845366644027,
+        "accuracy": 0.42083333333333334
+      }
+    }
+  ],
+  "absolute_timeline": [
+    {
+      "offset": 0,
+      "prior_brier": 0.2515625,
+      "J_brier": 0.263968006184424,
+      "raw_brier": 0.2727034442794816,
+      "logit_brier": 0.250633740033618,
+      "surface_brier": 0.25156249999999997
+    },
+    {
+      "offset": 16,
+      "prior_brier": 0.2515625,
+      "J_brier": 0.2555480248013782,
+      "raw_brier": 0.2548616371177702,
+      "logit_brier": 0.25107180163746773,
+      "surface_brier": 0.25179412257176675
+    },
+    {
+      "offset": 32,
+      "prior_brier": 0.2515625,
+      "J_brier": 0.2559054825891631,
+      "raw_brier": 0.25569161023347714,
+      "logit_brier": 0.2517559341817499,
+      "surface_brier": 0.25100936084834075
+    },
+    {
+      "offset": 64,
+      "prior_brier": 0.2515625,
+      "J_brier": 0.25519998223834944,
+      "raw_brier": 0.25313059178253444,
+      "logit_brier": 0.2516388504196467,
+      "surface_brier": 0.2521388189660452
+    },
+    {
+      "offset": 96,
+      "prior_brier": 0.2515625,
+      "J_brier": 0.2570374518342315,
+      "raw_brier": 0.25350262938045376,
+      "logit_brier": 0.2519585746604664,
+      "surface_brier": 0.25389277208377753
+    },
+    {
+      "offset": 128,
+      "prior_brier": 0.2515625,
+      "J_brier": 0.25235382295832925,
+      "raw_brier": 0.25304599393520155,
+      "logit_brier": 0.2502341626465025,
+      "surface_brier": 0.2524892274117202
+    },
+    {
+      "offset": 192,
+      "prior_brier": 0.2515625,
+      "J_brier": 0.26053331169297117,
+      "raw_brier": 0.25663126742999137,
+      "logit_brier": 0.2516283913382095,
+      "surface_brier": 0.25324851250446595
+    },
+    {
+      "offset": 256,
+      "prior_brier": 0.2515625,
+      "J_brier": 0.25930243026909877,
+      "raw_brier": 0.2563326981103606,
+      "logit_brier": 0.25220171276442555,
+      "surface_brier": 0.2494112321126644
+    },
+    {
+      "offset": 384,
+      "prior_brier": 0.2520812074829932,
+      "J_brier": 0.26578221117435913,
+      "raw_brier": 0.26390951454590156,
+      "logit_brier": 0.2527552507006448,
+      "surface_brier": 0.25239596559538663
+    },
+    {
+      "offset": 512,
+      "prior_brier": 0.2529050925925926,
+      "J_brier": 0.25639620205608116,
+      "raw_brier": 0.23578361454602173,
+      "logit_brier": 0.25203599339062904,
+      "surface_brier": 0.2543929473298485
+    }
+  ],
+  "shared_timeline": [
+    {
+      "offset": 0,
+      "J_brier": 0.25,
+      "raw_brier": 0.25,
+      "surface_brier": 0.25
+    },
+    {
+      "offset": 16,
+      "J_brier": 0.2716419541756621,
+      "raw_brier": 0.2713199662590596,
+      "surface_brier": 0.26093817360529814
+    },
+    {
+      "offset": 32,
+      "J_brier": 0.30674708822620184,
+      "raw_brier": 0.2968681276326585,
+      "surface_brier": 0.27651357293953654
+    },
+    {
+      "offset": 64,
+      "J_brier": 0.2153354291997742,
+      "raw_brier": 0.258216519019541,
+      "surface_brier": 0.269764952502286
+    },
+    {
+      "offset": 96,
+      "J_brier": 0.2627797267382056,
+      "raw_brier": 0.24279482526310892,
+      "surface_brier": 0.25918483691899147
+    },
+    {
+      "offset": 128,
+      "J_brier": 0.27441407035237786,
+      "raw_brier": 0.28183043646830974,
+      "surface_brier": 0.23850359011947062
+    },
+    {
+      "offset": 192,
+      "J_brier": 0.2898243550203255,
+      "raw_brier": 0.25970348498051415,
+      "surface_brier": 0.2172325864485587
+    },
+    {
+      "offset": 256,
+      "J_brier": 0.23655469608076793,
+      "raw_brier": 0.24477635540189988,
+      "surface_brier": 0.22823155958877464
+    }
+  ],
+  "layers_at_256": [
+    {
+      "layer": 4,
+      "J": {
+        "brier": 0.2655085740883779,
+        "accuracy": 0.4861111111111111
+      },
+      "raw": {
+        "brier": 0.22450802008379345,
+        "accuracy": 0.6416666666666667
+      }
+    },
+    {
+      "layer": 8,
+      "J": {
+        "brier": 0.2514146648765025,
+        "accuracy": 0.5694444444444444
+      },
+      "raw": {
+        "brier": 0.2261424584999945,
+        "accuracy": 0.625
+      }
+    },
+    {
+      "layer": 12,
+      "J": {
+        "brier": 0.2025132074444149,
+        "accuracy": 0.7000000000000001
+      },
+      "raw": {
+        "brier": 0.2286984784627992,
+        "accuracy": 0.6305555555555555
+      }
+    },
+    {
+      "layer": 16,
+      "J": {
+        "brier": 0.22517293388277837,
+        "accuracy": 0.6611111111111111
+      },
+      "raw": {
+        "brier": 0.2359843715045887,
+        "accuracy": 0.5722222222222223
+      }
+    },
+    {
+      "layer": 20,
+      "J": {
+        "brier": 0.18061436789635635,
+        "accuracy": 0.7472222222222222
+      },
+      "raw": {
+        "brier": 0.21803327097139183,
+        "accuracy": 0.6833333333333332
+      }
+    },
+    {
+      "layer": 24,
+      "J": {
+        "brier": 0.19714796178311186,
+        "accuracy": 0.7277777777777779
+      },
+      "raw": {
+        "brier": 0.2411082424345733,
+        "accuracy": 0.5833333333333334
+      }
+    },
+    {
+      "layer": 28,
+      "J": {
+        "brier": 0.18303114618605054,
+        "accuracy": 0.7916666666666666
+      },
+      "raw": {
+        "brier": 0.22737667821822372,
+        "accuracy": 0.6694444444444444
+      }
+    },
+    {
+      "layer": 30,
+      "J": {
+        "brier": 0.19687856024173497,
+        "accuracy": 0.8027777777777777
+      },
+      "raw": {
+        "brier": 0.22644936336474777,
+        "accuracy": 0.6472222222222223
+      }
+    }
+  ],
+  "nested_layer_at_256": {
+    "J_brier": 0.2068331233557185,
+    "raw_brier": 0.24235999803631703,
+    "delta_brier": -0.035526874680598536,
+    "delta_ci": [
+      -0.06639318909449757,
+      0.006758907608763923
+    ]
+  },
+  "phrase_hazard": {
+    "rows": [
+      {
+        "offset": 64,
+        "J_auc": 0.5027777777777778,
+        "raw_logit_auc": 0.4611111111111111
+      },
+      {
+        "offset": 128,
+        "J_auc": 0.5555555555555556,
+        "raw_logit_auc": 0.5944444444444444
+      },
+      {
+        "offset": 256,
+        "J_auc": 0.7611111111111111,
+        "raw_logit_auc": 0.6472222222222223
+      },
+      {
+        "offset": 512,
+        "J_auc": 0.5291666666666667,
+        "raw_logit_auc": 0.6124999999999999
+      }
+    ],
+    "familywise_p": 0.011799764004719906,
+    "permutations": 50000
+  },
+  "selection": [
+    {
+      "offset": 64,
+      "task_count": 6,
+      "J_top1": 0.5,
+      "J_top2": 0.8333333333333334,
+      "raw_top1": 0.8333333333333334,
+      "raw_top2": 0.8333333333333334,
+      "random_top1": 0.3958333333333333,
+      "random_top2": 0.636904761904762,
+      "J_minus_random_top1_ci": [
+        -0.14583333333333334,
+        0.3958333333333333
+      ],
+      "J_minus_raw_top1_ci": [
+        -0.6666666666666666,
+        0.0
+      ]
+    },
+    {
+      "offset": 128,
+      "task_count": 6,
+      "J_top1": 0.5,
+      "J_top2": 0.6666666666666666,
+      "raw_top1": 0.5,
+      "raw_top2": 0.6666666666666666,
+      "random_top1": 0.3958333333333333,
+      "random_top2": 0.636904761904762,
+      "J_minus_random_top1_ci": [
+        -0.14583333333333334,
+        0.3958333333333333
+      ],
+      "J_minus_raw_top1_ci": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "offset": 256,
+      "task_count": 6,
+      "J_top1": 0.6666666666666666,
+      "J_top2": 0.6666666666666666,
+      "raw_top1": 0.6666666666666666,
+      "raw_top2": 0.6666666666666666,
+      "random_top1": 0.3958333333333333,
+      "random_top2": 0.636904761904762,
+      "J_minus_random_top1_ci": [
+        -0.041666666666666664,
+        0.5625
+      ],
+      "J_minus_raw_top1_ci": [
+        -0.5,
+        0.5
+      ]
+    },
+    {
+      "offset": 512,
+      "task_count": 6,
+      "J_top1": 0.6666666666666666,
+      "J_top2": 1.0,
+      "raw_top1": 0.8333333333333334,
+      "raw_top2": 0.8333333333333334,
+      "random_top1": 0.40972222222222227,
+      "random_top2": 0.6595238095238095,
+      "J_minus_random_top1_ci": [
+        -0.08333333333333333,
+        0.5833333333333333
+      ],
+      "J_minus_raw_top1_ci": [
+        -0.5,
+        0.0
+      ]
+    }
+  ],
+  "random_alignment": [
+    {
+      "offset": 64,
+      "official_brier": 0.2356028908347477,
+      "random_mean_brier": 0.24491128800859283,
+      "random_central_95": [
+        0.23512983280900585,
+        0.2541784892190879
+      ],
+      "random_better_count": 4,
+      "random_count": 100,
+      "rank_p": 0.04950495049504951
+    },
+    {
+      "offset": 128,
+      "official_brier": 0.22468113735966733,
+      "random_mean_brier": 0.22344438270196088,
+      "random_central_95": [
+        0.21552106448687242,
+        0.2303034300816243
+      ],
+      "random_better_count": 63,
+      "random_count": 100,
+      "rank_p": 0.6336633663366337
+    },
+    {
+      "offset": 256,
+      "official_brier": 0.21414774467566836,
+      "random_mean_brier": 0.23679109434029302,
+      "random_central_95": [
+        0.22791796012021476,
+        0.24565528718241453
+      ],
+      "random_better_count": 0,
+      "random_count": 100,
+      "rank_p": 0.009900990099009901
+    }
+  ],
+  "label_permutation_at_256": {
+    "permutations": 999,
+    "J_minus_raw_p": 0.004
+  },
+  "domain_lens": [
+    {
+      "offset": 64,
+      "coding_minus_official_brier": -0.0015577309814634455,
+      "ci": [
+        -0.004051610838068903,
+        0.0016127232643189983
+      ]
+    },
+    {
+      "offset": 128,
+      "coding_minus_official_brier": 0.0025307131728775356,
+      "ci": [
+        -0.001015121292884442,
+        0.005813036599612982
+      ]
+    },
+    {
+      "offset": 256,
+      "coding_minus_official_brier": 0.003460041437638478,
+      "ci": [
+        -0.01291587048283605,
+        0.02003292726473338
+      ]
+    }
+  ],
+  "metric_prior": {
+    "stored_J_brier": 0.19714796178311186,
+    "raw_isotropic_brier": 0.2411082424345733,
+    "raw_with_exact_J_metric_brier": 0.1971479831428469,
+    "J_minus_matched_brier": -2.135973503625266e-08,
+    "matched_minus_raw_brier": -0.043960259291726395,
+    "J_effective_fold_direction_mean_cosine": 0.858481042767547,
+    "raw_fold_direction_mean_cosine": 0.787050135500931,
+    "top_1pct_direction_energy": 0.4459371985494766,
+    "isotropic_expected_top_1pct_energy": 0.08348719698521283,
+    "all_singular_values_nonzero": true,
+    "condition_number": 13021.992878119581,
+    "time_comparison": [
+      {
+        "offset": 64,
+        "stored_J_brier": 0.226347871359134,
+        "raw_isotropic_brier": 0.2484272779674355,
+        "raw_with_exact_J_metric_brier": 0.22634718856131952,
+        "J_minus_matched_brier": 6.827978144829938e-07,
+        "matched_minus_raw_brier": -0.02208008940611597,
+        "J_effective_fold_direction_mean_cosine": 0.8300110892033149,
+        "top_1pct_direction_energy": 0.3691383049766879,
+        "random_alignment_rank_p": 0.04950495049504951
+      },
+      {
+        "offset": 128,
+        "stored_J_brier": 0.2123476377640313,
+        "raw_isotropic_brier": 0.22766275076731043,
+        "raw_with_exact_J_metric_brier": 0.2123488208798845,
+        "J_minus_matched_brier": -1.1831158532038533e-06,
+        "matched_minus_raw_brier": -0.015313929887425942,
+        "J_effective_fold_direction_mean_cosine": 0.8219650414082754,
+        "top_1pct_direction_energy": 0.2977977037806769,
+        "random_alignment_rank_p": 0.6336633663366337
+      },
+      {
+        "offset": 256,
+        "stored_J_brier": 0.19714796178311186,
+        "raw_isotropic_brier": 0.2411082424345733,
+        "raw_with_exact_J_metric_brier": 0.1971479831428469,
+        "J_minus_matched_brier": -2.135973503625266e-08,
+        "matched_minus_raw_brier": -0.043960259291726395,
+        "J_effective_fold_direction_mean_cosine": 0.858481042767547,
+        "top_1pct_direction_energy": 0.4459371985494766,
+        "random_alignment_rank_p": 0.009900990099009901
+      }
+    ],
+    "conclusion": "J@h contains no new linear information beyond h. Any reproducible gain of raw_with_J_metric over ordinary raw ridge is evidence for a finite-sample anisotropic prior. The random J@Q controls test whether the official right-singular alignment, rather than the singular spectrum alone, supplies that prior."
+  },
+  "exploration_v2": {
+    "spectral_subspace": {
+      "task_count": 6,
+      "full_J_brier": 0.19714798129217925,
+      "raw_brier": 0.2411082424345733,
+      "top_10pct_brier": 0.1972621899243985,
+      "top_10pct_recovered_benefit_fraction": 0.9974020028714271,
+      "top_25pct_brier": 0.19851791965354412,
+      "band_25_to_50pct_brier": 0.20897253609767072,
+      "bottom_50pct_brier": 0.2577929907994007,
+      "drop_top_1pct_delta_brier": 0.026061281987678236,
+      "drop_top_1pct_signflip_p": 0.046875
+    },
+    "format_confound": {
+      "clean_task_count": 5,
+      "clean_pair_count": 45,
+      "J_clean_pair_accuracy": 0.825,
+      "raw_clean_pair_accuracy": 0.5866666666666667,
+      "surface_clean_pair_accuracy": 0.6466666666666667,
+      "clean_format_prediction_auc": 0.5142857142857142
+    },
+    "cross_time_transfer": {
+      "train_offset": 256,
+      "offset_count": 10,
+      "t256_J_auc": 0.6694444444444444,
+      "t256_J_brier": 0.23020796217534936,
+      "t256_J_score_separation": 0.11207405548199183,
+      "t384_J_auc": 0.4138888888888889,
+      "t384_J_score_separation": -0.11326393101112997,
+      "max_over_offsets_familywise_p": 0.2965470345296547,
+      "t256_pointwise_p": 0.057079429205707945
+    },
+    "temporal_direction_rotation": {
+      "J": {
+        "adjacent_offset_mean_absolute_cosine": 0.09104465250236794,
+        "adjacent_offset_mean_cosine": -0.0009243627626407645,
+        "same_fold_cross_offset_mean_absolute_cosine": 0.05172290055884191,
+        "same_fold_cross_offset_mean_cosine": 0.0016917979263736812,
+        "same_offset_cross_fold_mean_cosine": 0.7810521381168601
+      },
+      "raw": {
+        "adjacent_offset_mean_absolute_cosine": 0.06500733425235151,
+        "adjacent_offset_mean_cosine": 0.005523017194463024,
+        "same_fold_cross_offset_mean_absolute_cosine": 0.042526642203843244,
+        "same_fold_cross_offset_mean_cosine": 0.004879773130103151,
+        "same_offset_cross_fold_mean_cosine": 0.7772658912006135
+      }
+    },
+    "unsupervised_selection": {
+      "task_count": 6,
+      "best_cell": "offset=64|representation=J_row_l2|method=knn_outlier_k3|k=1",
+      "best_pass_at_selected": 0.8333333333333334,
+      "familywise_p": 0.5345893082138358,
+      "exact_random_pass": 0.3958333333333333,
+      "matching_raw_pass_at_selected": 0.8333333333333334
+    },
+    "fused_scalar_probe": {
+      "maximum_absolute_score_error": 9.992007221626409e-16,
+      "root_mean_squared_score_error": 4.000945992703989e-16,
+      "dense_J_macs": 6553600,
+      "fused_macs": 2560,
+      "theoretical_reduction_factor": 2560.0,
+      "dense_J_storage_mib": 25.0,
+      "fused_storage_mib": 0.009769439697265625
+    },
+    "few_task_learning_curve": {
+      "rows": [
+        {
+          "training_task_count": 1,
+          "J_brier": 0.23452623995500976,
+          "raw_brier": 0.24787460843334466,
+          "J_minus_raw_brier": -0.013348368478334899,
+          "Mbpp_614_J_minus_raw_brier": 0.011475453378466144
+        },
+        {
+          "training_task_count": 2,
+          "J_brier": 0.2222845888300293,
+          "raw_brier": 0.24474615984716816,
+          "J_minus_raw_brier": -0.02246157101713886,
+          "Mbpp_614_J_minus_raw_brier": 0.018269442464590557
+        },
+        {
+          "training_task_count": 3,
+          "J_brier": 0.2121982433286553,
+          "raw_brier": 0.2415480634794456,
+          "J_minus_raw_brier": -0.029349820150790296,
+          "Mbpp_614_J_minus_raw_brier": 0.02484111405719014
+        },
+        {
+          "training_task_count": 4,
+          "J_brier": 0.2040297600910279,
+          "raw_brier": 0.23864331144125464,
+          "J_minus_raw_brier": -0.03461355135022673,
+          "Mbpp_614_J_minus_raw_brier": 0.030707306902950454
+        },
+        {
+          "training_task_count": 5,
+          "J_brier": 0.19714796178311186,
+          "raw_brier": 0.2359716286057413,
+          "J_minus_raw_brier": -0.03882366682262944,
+          "Mbpp_614_J_minus_raw_brier": 0.03586820506632024
+        }
+      ],
+      "endpoint_gap_change": -0.025475298344294576,
+      "endpoint_gap_change_ci": [
+        -0.04345237588924317,
+        -0.0026659779637325104
+      ]
+    },
+    "selective_retry": {
+      "fixed_rows": [
+        {
+          "branches": 1,
+          "task_count": 6,
+          "oracle_pass_count": 3,
+          "J_pass_count": 3,
+          "mean_output_tokens": 1199.0
+        },
+        {
+          "branches": 2,
+          "task_count": 6,
+          "oracle_pass_count": 3,
+          "J_pass_count": 2,
+          "mean_output_tokens": 2095.3333333333335
+        },
+        {
+          "branches": 4,
+          "task_count": 6,
+          "oracle_pass_count": 5,
+          "J_pass_count": 4,
+          "mean_output_tokens": 1625.5
+        },
+        {
+          "branches": 8,
+          "task_count": 6,
+          "oracle_pass_count": 6,
+          "J_pass_count": 4,
+          "mean_output_tokens": 2649.5
+        }
+      ],
+      "adaptive_cap4": {
+        "pass_count": 3,
+        "task_count": 6,
+        "mean_revealed_branches": 3.3333333333333335,
+        "mean_output_tokens": 1852.6666666666667,
+        "dominated_by_fixed_4": true
+      },
+      "fixed_cap4": {
+        "pass_count": 4,
+        "task_count": 6,
+        "mean_output_tokens": 1625.5
+      }
+    },
+    "surface_capacity": {
+      "best_scanned_dimension": 16384,
+      "surface_brier": 0.24462798062793553,
+      "surface_accuracy": 0.611111111111111,
+      "J_brier": 0.19714796178311186,
+      "surface_minus_J_brier": 0.04748001884482367
+    }
+  },
+  "negative_controls": {
+    "absolute_detector_best_claim": "J never beats the task-agnostic prior on Brier at the highlighted 64/128/256 checkpoints.",
+    "shared_time_integrated_J_brier": 0.26341216497416436,
+    "shared_time_chance_brier": 0.25,
+    "geometry_best_J_familywise_p": 0.5487451254874512,
+    "sparse_support_adjacent_median_jaccard": 0.0,
+    "coding_domain_improved": false
+  },
+  "steering": {
+    "status": "complete",
+    "verdict": "negative",
+    "title": "“检查边界”方向没有提升通过率；等范数随机方向同样下降",
+    "conclusion": "baseline 6/10，concept+ 3/10，随机方向 3/10，concept− 2/10。concept+ 与随机方向各自都相对 baseline 净减少 3 个通过样本，且二者仅有两个相反翻转、净差为 0；当前只支持“持续残差扰动会破坏生成”，不支持概念特异的能力 steering。",
+    "pass_counts": {
+      "baseline": 6,
+      "concept_plus": 3,
+      "random_norm_matched": 3,
+      "concept_minus": 2
+    },
+    "matched_groups": 10,
+    "concept_plus_vs_baseline": {
+      "failure_to_success": 1,
+      "success_to_failure": 4,
+      "net_pass_change": -3,
+      "exact_mcnemar_two_sided_p": 0.375
+    },
+    "random_vs_baseline": {
+      "failure_to_success": 1,
+      "success_to_failure": 4,
+      "net_pass_change": -3,
+      "exact_mcnemar_two_sided_p": 0.375
+    },
+    "concept_minus_vs_baseline": {
+      "failure_to_success": 1,
+      "success_to_failure": 5,
+      "net_pass_change": -4
+    },
+    "concept_plus_vs_random": {
+      "concept_plus_only_pass": 1,
+      "random_only_pass": 1,
+      "net_pass_change": 0,
+      "exact_mcnemar_two_sided_p": 1.0
+    }
+  },
+  "provenance": {
+    "paired": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/paired_nested_loto.json",
+    "absolute": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/absolute_correctness_nested_loto.json",
+    "shared_time": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/shared_time_paired_nested_loto.json",
+    "selection": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/trajectory_selection_nested_loto.json",
+    "random_alignment": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/random_input_alignment_fixedC003_100seeds.json",
+    "label_permutation": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/paired_label_permutation_t256_fixedC003_n999.json",
+    "cross_layer": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/cross_layer_exactprefix_nested_v1.json",
+    "phrase_hazard": "artifacts/qwen3_5_4b/hazard_phrase_bank_v1/paired_report_exactprefix_v2_permutation.json",
+    "geometry": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/geometry_dynamic_risk_v1/report.json",
+    "sparse": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/sparse_jspace_coordinates_v1/report.json",
+    "domain_lens": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/paired_lens_comparison_exactprefix_v2.json",
+    "metric_prior": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/jspace_metric_prior_audit_v1.json",
+    "metric_prior_t64": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/jspace_metric_prior_audit_t64_v1.json",
+    "metric_prior_t128": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/jspace_metric_prior_audit_t128_v1.json",
+    "causal_audit": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/causality_audit.json",
+    "steering": "artifacts/qwen3_5_4b/edge_case_steering_pilot_v1/report.json",
+    "exploration_v2_spectral_subspace": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/spectral_subspace_audit_v1.json",
+    "exploration_v2_format_confound": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/correctness_format_confound_v1.json",
+    "exploration_v2_cross_time_transfer": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/cross_time_transfer_v1/report.json",
+    "exploration_v2_temporal_rotation": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/temporal_probe_rotation_v1.json",
+    "exploration_v2_unsupervised_selection": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/unsupervised_sibling_selection_v1/report.json",
+    "exploration_v2_cheap_metric": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/cheap_metric_approximation_v1.json",
+    "exploration_v2_few_task_curve": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/few_task_learning_curve_v1.json",
+    "exploration_v2_selective_retry": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/selective_retry_policy_v1/report.json",
+    "exploration_v2_surface_capacity": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/surface_hash_capacity_v1.json"
+  }
+}
