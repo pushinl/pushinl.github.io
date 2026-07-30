@@ -315,6 +315,19 @@ function explorationPanel(explore) {
   const dialogue = explore?.dialogue_capability || {};
   const topkLoss = explore?.topk_information_loss || {};
   const execution = explore?.epistemic_execution_failure || {};
+  const naturalistic = explore?.naturalistic_epistemic_replication || {};
+  const crossRisk = explore?.cross_domain_reliability || {};
+  const topkCross = explore?.topk_cross_domain_replication || {};
+  const semanticRisk = explore?.semantic_risk_axis || {};
+  const layerwise = explore?.layerwise_answerability || {};
+  const gated = explore?.gated_clarification_intervention || {};
+  const oodAnswerability = explore?.ood_answerability_scenarios || {};
+  const causalPatch = explore?.answerability_causal_patch || {};
+  const JDepthRows = layerwise.systems?.J?.rows || [];
+  const rawDepthRows = layerwise.systems?.raw?.rows || [];
+  const J16 = JDepthRows.find((row) => row.layer === 16) || {};
+  const J24 = JDepthRows.find((row) => row.layer === 24) || {};
+  const raw24 = rawDepthRows.find((row) => row.layer === 24) || {};
   const learningRows = Array.isArray(learning.rows) ? learning.rows : [];
   const firstLearning = learningRows[0] || {};
   const lastLearning = learningRows.at(-1) || {};
@@ -594,6 +607,260 @@ function explorationPanel(explore) {
           当作普适机制结论。
         </p>
       </article>
+
+      <article class="explore-card">
+        <header>${tag("positive", "零调参跨题族迁移")}<span>12 · NATURAL PRESSURE</span></header>
+        <h3>模型会硬猜，但回答前仍能读出“输入其实不够”</h3>
+        <div class="number-triplet">
+          <div><strong>${fmt(naturalistic.systems?.J?.auc, 3)}</strong><span>J AUC</span></div>
+          <div><strong>${fmt(naturalistic.systems?.raw?.auc, 3)}</strong><span>raw AUC</span></div>
+          <div><strong>${naturalistic.J_high_risk_unsafe_count}/${naturalistic.unsafe_pressure_count}</strong><span>高风险却硬猜</span></div>
+        </div>
+        <p>
+          旧 45 个有效 prompt 上冻结的 probe，
+          不调 C、阈值或 layer，直接迁移到 ${naturalistic.family_count} 个全新
+          family / ${naturalistic.prompt_count} 个自然措辞 prompt。J Brier
+          ${fmt(naturalistic.systems?.J?.brier, 4)}，raw
+          ${fmt(naturalistic.systems?.raw?.brier, 4)}；J 的 family-paired Brier
+          优势 ${signed(naturalistic.J_vs_raw_brier_advantage, 4)}，95% CI
+          [${fmt(naturalistic.J_vs_raw_brier_bootstrap_95_ci?.[0], 4)},
+          ${fmt(naturalistic.J_vs_raw_brier_bootstrap_95_ci?.[1], 4)}]，四项校正
+          p=${fmt(naturalistic.J_vs_raw_bonferroni_4_p, 3)}，还不能称为 J 独有。
+        </p>
+        <p>
+          压力场景有 ${naturalistic.unsafe_pressure_count} 条无依据具体回答，其中
+          ${naturalistic.J_high_risk_unsafe_count} 条在 prompt-end 已被旧 J probe
+          判为 insufficiency≥0.5；排除截断后比例仍是
+          ${pct(naturalistic.J_high_risk_nontruncated_unsafe_fraction)}。
+          这是真实的“表征—行为错位”，但不是通用 wrongness：严格 claim 前 t=8
+          仅 ${naturalistic.strict_preclaim_t8?.row_count} 条，J/raw/surface AUC
+          ${fmt(naturalistic.strict_preclaim_t8?.J_auc, 3)} /
+          ${fmt(naturalistic.strict_preclaim_t8?.raw_auc, 3)} /
+          ${fmt(naturalistic.strict_preclaim_t8?.visible_surface_auc, 3)}。
+        </p>
+      </article>
+
+      <article class="explore-card">
+        <header>${tag("negative", "风险必须分头监控")}<span>13 · NO UNIVERSAL AXIS</span></header>
+        <h3>coding、信息不足、完成失败没有一条通用“不靠谱方向”</h3>
+        <div class="number-triplet">
+          <div><strong>${fmt(crossRisk.J_effective_pairwise_cosines?.["coding<->epistemic"], 3)}</strong><span>code↔info cosine</span></div>
+          <div><strong>${fmt(crossRisk.J_effective_pairwise_cosines?.["coding<->dialogue"], 3)}</strong><span>code↔dialog cosine</span></div>
+          <div><strong>${fmt(crossRisk.J_effective_pairwise_cosines?.["epistemic<->dialogue"], 3)}</strong><span>info↔dialog cosine</span></div>
+        </div>
+        <p>
+          三个 J probe 融合回同一 raw 坐标后近乎正交。6 个单域→异域迁移的
+          within-group AUC 范围
+          ${fmt(Math.min(...Object.values(crossRisk.direct_J_within_group_auc || {})), 3)}–
+          ${fmt(Math.max(...Object.values(crossRisk.direct_J_within_group_auc || {})), 3)}，
+          3 个两域训练、整域留出的 AUC 范围
+          ${fmt(Math.min(...Object.values(crossRisk.lodo_J_within_group_auc || {})), 3)}–
+          ${fmt(Math.max(...Object.values(crossRisk.lodo_J_within_group_auc || {})), 3)}；
+          全部低于 0.5。
+        </p>
+        <p>
+          dialogue→epistemic 在
+          ${crossRisk.dialogue_to_epistemic_inversion?.mixed_target_group_count} 个
+          family 上完全反向，AUC
+          ${fmt(crossRisk.dialogue_to_epistemic_inversion?.mean_within_group_auc, 3)}，
+          ${crossRisk.registered_cell_count}-cell max-absolute 校正
+          p=${fmt(crossRisk.dialogue_to_epistemic_inversion?.all_cell_max_abs_stat_two_sided_p, 4)}。
+          看到目标标签后再翻转不算通用 detector；工程上应分别训练
+          answerability、execution、grounding、tool need 和 completion heads。
+        </p>
+      </article>
+
+      <article class="explore-card">
+        <header>${tag("candidate", "独立领域复现")}<span>14 · TOP-K REPLICATION</span></header>
+        <h3>几个词仍不够；Top‑50 向量方程才保留大部分效果</h3>
+        <div class="number-triplet">
+          <div><strong>${fmt(topkCross.systems?.top5_score_sparse?.auc, 3)}</strong><span>Top‑5 words AUC</span></div>
+          <div><strong>${fmt(topkCross.systems?.top50_minnorm_reconstruction?.auc, 3)}</strong><span>Top‑50 sketch AUC</span></div>
+          <div><strong>${fmt(topkCross.systems?.J?.auc, 3)}</strong><span>full J AUC</span></div>
+        </div>
+        <p>
+          在独立的 ${topkCross.prompt_count} 个 epistemic prompts /
+          ${topkCross.template_count} 个模板上，Top‑5 词面 Brier
+          ${fmt(topkCross.systems?.top5_score_sparse?.brier, 4)}，Top‑50 词面
+          ${fmt(topkCross.systems?.top50_score_sparse?.brier, 4)}；把 token ID 与
+          精确 score 当作 unembedding 线性方程，Top‑50 最小范数重建降到
+          ${fmt(topkCross.systems?.top50_minnorm_reconstruction?.brier, 4)}，
+          但完整 J 是 ${fmt(topkCross.systems?.J?.brier, 4)}。
+        </p>
+        <p>
+          Top‑5/50 只保留 ${pct(topkCross.top5_energy_retained, 3)} /
+          ${pct(topkCross.top50_energy_retained, 3)} 能量；matched prompts 的 Top‑1
+          仅 ${topkCross.matched_top1_same_count}/${topkCross.matched_pair_count}
+          相同。连续的同模板 defect−complete 方向 cosine 却为
+          ${fmt(topkCross.within_template_delta_cosine, 3)}，提示下一步应研究
+          contrastive direction，而不是把不稳定的 token 身份当成完整思维。
+        </p>
+      </article>
+
+      <article class="explore-card">
+        <header>${tag("positive", "聚合方向可读")}<span>15 · CONTRASTIVE SEMANTICS</span></header>
+        <h3>别读单点关键词；读 matched 反事实形成的“信息不足”方向</h3>
+        <div class="number-triplet">
+          <div><strong>${fmt(semanticRisk.missing_neutral_delta_cosine?.J?.cross_template, 3)}</strong><span>跨模板 Δ cosine</span></div>
+          <div><strong>${pct(semanticRisk.cross_panel_learned_pair_accuracy?.old_to_new?.J)}</strong><span>旧→新 pair accuracy</span></div>
+          <div><strong>${fmt(semanticRisk.cross_panel_J_learned_direction_cosine, 3)}</strong><span>新旧整轴 cosine</span></div>
+        </div>
+        <p>
+          在 ${semanticRisk.new_family_count} 个 family / ${semanticRisk.new_template_count}
+          个新模板中，最小反事实
+          <code>missing_neutral − complete</code> 的 J 方向，同模板跨 nonce
+          cosine ${fmt(semanticRisk.missing_neutral_delta_cosine?.J?.same_template_cross_nonce, 3)}，
+          跨模板仍有
+          ${fmt(semanticRisk.missing_neutral_delta_cosine?.J?.cross_template, 3)}；
+          raw 对应为
+          ${fmt(semanticRisk.missing_neutral_delta_cosine?.raw?.same_template_cross_nonce, 3)} /
+          ${fmt(semanticRisk.missing_neutral_delta_cosine?.raw?.cross_template, 3)}。
+          新旧面板双向直接迁移，J 都把 matched pairs 全部排对，但 raw 也几乎一样强。
+        </p>
+        <p>
+          聚合/learned 方向的正向 Top‑10 稳定出现“无法、inability、
+          unavailable、absent”：fold Jaccard 在旧/新面板为
+          ${fmt(semanticRisk.learned_positive_top10_stability?.old?.jaccard, 3)} /
+          ${fmt(semanticRisk.learned_positive_top10_stability?.new?.jaccard, 3)}，
+          高于单状态 matched Top‑10 的
+          ${fmt(semanticRisk.single_state_top10_jaccard?.old, 3)} /
+          ${fmt(semanticRisk.single_state_top10_jaccard?.new, 3)}。
+          但新旧完整方向 cosine 只有
+          ${fmt(semanticRisk.cross_panel_J_learned_direction_cosine, 3)}：
+          更像可迁移的 answerability 风险锥，而不是唯一“自知”向量。
+        </p>
+      </article>
+
+      <article class="explore-card">
+        <header>${tag("negative", "不能提前到早层行动")}<span>16 · DEPTH AUDIT</span></header>
+        <h3>早层已经能排序，但校准到 layer 24 才能跨题族直接设阈值</h3>
+        <div class="number-triplet">
+          <div><strong>L${layerwise.systems?.raw?.earliest_rank_layer}</strong><span>raw 最早已测排序层</span></div>
+          <div><strong>L${layerwise.systems?.J?.earliest_rank_layer}</strong><span>J 最早已测排序层</span></div>
+          <div><strong>L${layerwise.systems?.J?.earliest_actionable_layer}</strong><span>两者最早可行动层</span></div>
+        </div>
+        <p>
+          六个固定 source layers 上，J 到 L16 已有 AUC
+          ${fmt(J16.auc, 3)}，但 Brier ${fmt(J16.brier, 3)}
+          没通过预先固定的 0.15 校准门槛；到 L24 才是 AUC
+          ${fmt(J24.auc, 3)} / Brier ${fmt(J24.brier, 3)}。
+          raw 在 L24 为 ${fmt(raw24.auc, 3)} /
+          ${fmt(raw24.brier, 3)}。所以当前证据不支持 J 比 raw 更早部署，
+          更不能把某一层叫作“开始胡编的时刻”。
+        </p>
+        <p>
+          L8→L28 的 J probe 融回 raw 后方向 cosine
+          ${fmt(layerwise.J_effective_layer8_to_28_cosine, 3)}，同批问题的分数
+          Spearman 仍有 ${fmt(layerwise.J_layer8_to_28_score_spearman, 3)}：
+          风险坐标随深度旋转，方向相似与样本排序不是同一件事。L24 路由时已执行
+          ${layerwise.blocks_executed_at_actionable_layer}/${layerwise.total_blocks}
+          个 blocks，最多省下后续 ${layerwise.remaining_blocks_if_routed} 个；
+          真正节省主要来自不再生成无意义长回答，而不是超早层退出。
+        </p>
+      </article>
+
+      <article class="explore-card">
+        <header>${tag("candidate", "真实生成干预")}<span>17 · GATED CLARIFICATION</span></header>
+        <h3>监控器→安全提示这条链能工作，但收益目前来自提示，不是 J 独有</h3>
+        <div class="number-triplet">
+          <div><strong>${pct(gated.policies?.baseline?.unsupported_specific_rate)}</strong><span>baseline 硬猜</span></div>
+          <div><strong>${pct(gated.policies?.j_gated?.unsupported_specific_rate)}</strong><span>J gate 硬猜</span></div>
+          <div><strong>${pct(gated.policies?.always_reminder?.unsupported_specific_rate)}</strong><span>always 硬猜</span></div>
+        </div>
+        <p>
+          ${gated.family_count} 个 family 上实际生成
+          ${gated.physical_action_outcomes} 条配对动作输出，并重放为
+          ${gated.logical_policy_trajectories} 条策略轨迹。J gate 相对 baseline
+          将不足题硬猜降低
+          ${pct(Math.abs(gated.J_vs_baseline?.unsupported_rate_difference))}，
+          20 项冻结检验 Holm p=${fmt(gated.J_vs_baseline?.unsupported_holm_p, 4)}；
+          安全澄清从
+          ${pct(gated.policies?.baseline?.safe_clarification_rate)} 升至
+          ${pct(gated.policies?.j_gated?.safe_clarification_rate)}。
+        </p>
+        <p>
+          关键对照是 J、raw、always-reminder 在不足题上的行为端点完全相同：
+          已确认的是固定安全提醒有效，不是 J 特异性。J 只比 always 少提醒
+          ${gated.J_vs_always_operational?.fewer_reminded_prompts_per_48}/48 个 prompts，
+          每轮节省 ${gated.J_vs_always_operational?.input_tokens_saved_per_48} 个输入
+          tokens；同时完整题误触发
+          ${gated.J_gate_audit?.complete_prompt_false_trigger_count}/12，正确率由
+          ${pct(gated.policies?.baseline?.complete_correct_rate)} 降至
+          ${pct(gated.policies?.j_gated?.complete_correct_rate)}，错误拒绝升至
+          ${pct(gated.policies?.j_gated?.complete_false_refusal_rate)}。
+          人工校正后硬猜仍从
+          ${pct(gated.posthoc_sensitivity?.baseline?.insufficient_manual_unsupported_specific?.rate)}
+          降到
+          ${pct(gated.posthoc_sensitivity?.j_gated?.insufficient_manual_unsupported_specific?.rate)}，
+          因此提醒效果不是解析器假象，但当前 gate 还不适合直接部署。
+        </p>
+      </article>
+
+      <article class="explore-card">
+        <header>${tag("positive", "第三批冻结迁移")}<span>18 · LEXEME-FREE OOD</span></header>
+        <h3>去掉显式“缺失”词后，answerability 仍迁移，且 J 的校准首次稳健优于 raw</h3>
+        <div class="number-triplet">
+          <div><strong>${fmt(oodAnswerability.systems?.J?.auc, 3)}</strong><span>J AUC</span></div>
+          <div><strong>${fmt(oodAnswerability.systems?.J?.brier, 3)}</strong><span>J Brier</span></div>
+          <div><strong>${fmt(oodAnswerability.systems?.raw?.brier, 3)}</strong><span>raw Brier</span></div>
+        </div>
+        <p>
+          第三批 ${oodAnswerability.family_count} 个全新 matched families 覆盖
+          RAG 证据缺口、工具回包缺口和跨轮指代缺口；
+          ${oodAnswerability.explicit_lexeme_free_prompt_count}/${oodAnswerability.prompt_count}
+          个 prompts 均不含预先列出的 missing、absent、conflict、no result 等
+          显式词。旧 45-prompt probe、L24、C=0.01 和阈值均未调整。J matched
+          separation 经 8 项 Holm 校正 p=
+          ${fmt(oodAnswerability.J_matched_separation_holm_8_p, 4)}。
+        </p>
+        <p>
+          J 与 raw 的 matched 排序同为
+          ${pct(oodAnswerability.systems?.J?.matched_ranking_accuracy)}，raw pooled
+          AUC 甚至略高（${fmt(oodAnswerability.systems?.raw?.auc, 3)}）；真正的新
+          结果是 J Brier 比 raw 低
+          ${fmt(oodAnswerability.J_vs_raw_brier_advantage, 4)}，6 项计划比较 Holm
+          p=${fmt(oodAnswerability.J_vs_raw_brier_holm_6_p, 4)}。
+          这支持 J 作为小样本校准的 metric prior，而不是新增信息。场景分解也暴露
+          边界：RAG / tool matched accuracy 都是
+          ${pct(oodAnswerability.J_by_scenario?.rag_evidence_gap?.matched_ranking_accuracy)}，
+          多轮指代只有
+          ${pct(oodAnswerability.J_by_scenario?.multiturn_reference_gap?.matched_ranking_accuracy)}；
+          它仍不是通用“我不靠谱”分数。
+        </p>
+      </article>
+
+      <article class="explore-card">
+        <header>${tag("negative", "真实激活干预")}<span>19 · CAUSAL PATCH</span></header>
+        <h3>能解码不等于能 steering：沿 answerability 方向推一次没有带来澄清</h3>
+        <div class="number-triplet">
+          <div><strong>${pct(causalPatch.arms?.j_risk_plus?.insufficient_unsupported_specific_rate)}</strong><span>J+ 硬猜</span></div>
+          <div><strong>${pct(causalPatch.arms?.j_risk_minus?.insufficient_unsupported_specific_rate)}</strong><span>J− 硬猜</span></div>
+          <div><strong>${pct(causalPatch.arms?.random_j_norm?.insufficient_unsupported_specific_rate)}</strong><span>随机同范数硬猜</span></div>
+        </div>
+        <p>
+          这不是离线 replay：${causalPatch.family_count} 个 families、
+          ${causalPatch.arm_count} 个 arms、共 ${causalPatch.trajectory_count}
+          条真实 paired generations。在 L${causalPatch.source_layer} 的 prompt
+          最后一个 token，只在 prefill 第一次 forward 加一次冻结的
+          ${fmt(causalPatch.alpha_J_score_sd, 1)}-score-SD patch；随后生成不再改动。
+          J+ 相对 J− 的不足题硬猜和安全澄清差值都是
+          ${signed(causalPatch.directional_effects?.J_plus_minus_minus?.insufficient_unsupported_specific_rate, 3)} /
+          ${signed(causalPatch.directional_effects?.J_plus_minus_minus?.insufficient_safe_clarification_rate, 3)}。
+        </p>
+        <p>
+          raw+ 相对 raw− 虽少硬猜
+          ${pct(Math.abs(causalPatch.directional_effects?.raw_plus_minus_minus?.insufficient_unsupported_specific_rate))}，
+          但安全澄清也少
+          ${pct(Math.abs(causalPatch.directional_effects?.raw_plus_minus_minus?.insufficient_safe_clarification_rate))}，
+          只是转为不可解析输出，不符合风险正负对称。J+ 仅
+          ${pct(causalPatch.changes_from_baseline?.j_risk_plus?.output_token_ids_exact_changed_rate)}
+          的文本改变，而随机方向也会改变
+          ${pct(causalPatch.changes_from_baseline?.random_j_norm?.output_token_ids_exact_changed_rate)}；
+          “输出变了”本身不是因果语义证据。32 个冻结检验校正后均
+          p=${fmt(causalPatch.all_32_holm_p, 1)}，当前应使用外部 gate，不把这根
+          probe direction 当作行为旋钮。
+        </p>
+      </article>
     </div>
 
     <div class="retry-audit">
@@ -627,10 +894,12 @@ function explorationPanel(explore) {
     <div class="exploration-takeaway">
       <strong>这一轮得到的可执行结论</strong>
       <p>
-        下一轮应测试“按 checkpoint 分开的 probe bank + 新题族校准”，并把
-        Mbpp/614 这种 prior mismatch 当作一等失败模式；确定性契约检查优先，
-        effective-rank 只作为待前瞻验证的 batch gate。不应继续把资源投入到
-        Top-K 词解释、单一 J Δ 阈值、无监督离群点或当前自适应 retry。
+        当前路线已收敛为“按风险类型、按生成阶段的 probe bank”：信息不足
+        monitor 驱动的安全提示确实减少硬猜，但 J/raw/always-reminder 当前效果
+        相同；下一步是降低完整题误触发，而不是宣传 J 特异收益。
+        execution、grounding、tool need 和 completion 必须各自建模。确定性契约
+        检查优先，Mbpp/614 这类 prior mismatch 是一等失败模式。不应继续把资源
+        投入到单样本 Top-K 词、通用 J Δ 阈值、无监督离群点或当前自适应 retry。
         若最终只部署一个冻结标量评分器，则直接部署融合后的 raw 方向。
       </p>
     </div>
@@ -713,19 +982,19 @@ function render(findings, traces) {
   app.innerHTML = `
     <main>
       <header class="topbar">
-        <a href="#top" class="brand"><span>J</span><div><strong>J-space × Coding</strong><small>Qwen3.5-4B strict pilot</small></div></a>
+        <a href="#top" class="brand"><span>J</span><div><strong>J-space × Reliability</strong><small>coding · answerability · dialogue</small></div></a>
         <nav><a href="#answer">结论</a><a href="#evidence">证据</a><a href="#explore">新发现</a><a href="#retry">重试</a><a href="#problems">10 道原题</a><a href="#method">方法</a></nav>
         <span class="public-chip">公开访问 · 无需登录</span>
       </header>
 
       <section class="hero" id="top">
         <div class="hero-copy">
-          <p class="eyebrow">STRICT EXACT-PREFIX · 2026-07-30</p>
+          <p class="eyebrow">STRICT EXACT-PREFIX · UPDATED 2026-07-31</p>
           <h1>J-space 还不能告诉我们<br><em>“这条轨迹从此刻开始错了”</em></h1>
           <p class="hero-lead">
-            但在这 6 个 mixed-outcome 开发题的 L24 / t=256 screen 中，
-            J@h 出现了一个更窄、可检验的 sibling-ranking 候选信号。
-            它目前适合研究“分支排序”，不适合做单轨实时报警，也没有证明跨题泛化。
+            但探索已经找到更窄、可检验的用途：输入是否足以回答可以跨新题族
+            读出；coding 中只留下局部 sibling-ranking 候选。不同风险方向不能
+            通用迁移，几个可读关键词也不是完整思维。
           </p>
           <div class="hero-actions"><a class="primary-button" href="#answer">先看三个答案 ↓</a><a class="secondary-button" href="#problems">直接看 10 道原题</a></div>
         </div>
@@ -755,7 +1024,7 @@ function render(findings, traces) {
         <div class="answer-grid">
           ${answerCard("A", "能看到模型具体在想什么吗？", "不能；Top-K 词只是投影摘要", "negative", "J@h 是 2560 维向量。报告展示的几个词只是用 unembedding 把这个向量词汇化，不等于完整思维内容。固定多词概念轴比散乱关键词更有用，但仍只是一个可解释 measurement。")}
           ${answerCard("B", "能定位单条轨迹何时开始错吗？", "当前不能；没有稳定、单调的 onset", "negative", "单轨绝对风险的 J Brier 没有超过 task-agnostic prior；同一个读出跨时间共享时，256 token 的优势也明显衰减。所谓 J Δ、范数、速度等简单标量均未通过 familywise 置换检验。")}
-          ${answerCard("C", "那 J-space 有什么可用价值？", "多分支相对排序是最值得继续的方向", "positive", "给同一道题同时保留 4–8 条前缀，在 t≈256 比较它们；J@h 的相对读出在当前小样本上有方向特异性。下一步应冻结层、时间点和评分器，在全新题上做 prospective top-1 / top-2 验证。")}
+          ${answerCard("C", "那 J-space 有什么可用价值？", "任务特定风险头与几何先验", "positive", "当前最强结果是跨新题族读取“输入是否足够”；coding 里则只有同题多分支排序候选。二者都能融合成 raw hidden direction。下一步是实际 gate 干预和按风险类型、生成阶段分别验证。")}
         </div>
         <div class="relation-map">
           <div><span>同一道题</span><b>1 个 prompt</b></div><i>→</i>
@@ -880,7 +1149,7 @@ function render(findings, traces) {
         </dl></details>
       </section>
 
-      <footer><div><strong>J-space × Coding · strict pilot</strong><span>Qwen3.5-4B · MBPP+ · generated ${escapeHtml(findings.generated_at.slice(0, 10))}</span></div><p>公开页面 · 无需 ChatGPT 登录 · 原题与原始轨迹已内嵌</p><a href="#top">回到顶部 ↑</a></footer>
+      <footer><div><strong>J-space × Reliability · strict pilots</strong><span>Qwen3.5-4B · coding / epistemic / dialogue · generated ${escapeHtml(findings.generated_at.slice(0, 10))}</span></div><p>公开页面 · 无需 ChatGPT 登录 · 10 道原题与原始轨迹仍完整内嵌</p><a href="#top">回到顶部 ↑</a></footer>
     </main>
   `;
 
