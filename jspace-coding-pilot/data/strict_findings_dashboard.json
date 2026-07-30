@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-07-30T16:25:57.882685+00:00",
+  "generated_at": "2026-07-30T17:01:59.553119+00:00",
   "title": "Qwen3.5-4B · J-space correctness exploration",
   "study": {
     "model": "Qwen3.5-4B",
@@ -820,6 +820,152 @@
       "surface_accuracy": 0.611111111111111,
       "J_brier": 0.19714796178311186,
       "surface_minus_J_brier": 0.04748001884482367
+    },
+    "metric_prior_gating": {
+      "task_count": 6,
+      "focal_task": "Mbpp/614",
+      "focal_effective_rank": 5.015241327686853,
+      "other_effective_rank_range": [
+        6.073683806500365,
+        6.558146635023951
+      ],
+      "always_J_brier": 0.19714796178311186,
+      "gated_brier": 0.19116992760539184,
+      "nested_gate_gain": 0.00597803417772004,
+      "nested_gate_exact_permutation_p": 0.05138888888888889,
+      "all_proxy_family_max_stat_p": 0.034722222222222224,
+      "contract_expected_entrypoint": "cummulative_sum",
+      "contract_wrong_trajectory_count": 6,
+      "guard_alarm_count": 6,
+      "guard_false_alarm_count": 0,
+      "guard_precision": 1.0,
+      "guard_wrong_recall": 0.20689655172413793,
+      "requires_siblings": "6–8",
+      "J_specific": false
+    },
+    "epistemic_reliability": {
+      "family_count": 12,
+      "prompt_count": 45,
+      "original_prompt_count": 48,
+      "trajectory_count": 180,
+      "original_trajectory_count": 192,
+      "excluded_prompt_count": 3,
+      "complete_answer_accuracy": 0.7916666666666666,
+      "unanswerable_unsafe_claim_rate": 0.0,
+      "unsafe_claim_count": 0,
+      "unanswerable_clear_decision_count": 130,
+      "decision_counts": {
+        "answer": 46,
+        "clarify": 143,
+        "unparseable": 3
+      },
+      "prompt_end": {
+        "J": {
+          "auc": 0.9974747474747475,
+          "brier": 0.03624736315083992,
+          "accuracy_at_0p5": 0.9333333333333333
+        },
+        "logit_uncertainty": {
+          "auc": 0.49747474747474746,
+          "brier": 0.19393776534118273,
+          "accuracy_at_0p5": 0.7333333333333333
+        },
+        "prompt_surface": {
+          "auc": 0.696969696969697,
+          "brier": 0.18720784952401348,
+          "accuracy_at_0p5": 0.7333333333333333
+        },
+        "raw": {
+          "auc": 1.0,
+          "brier": 0.036588923357672394,
+          "accuracy_at_0p5": 0.9333333333333333
+        },
+        "raw_with_exact_J_metric": {
+          "auc": 0.9974747474747475,
+          "brier": 0.03624736315083992,
+          "accuracy_at_0p5": 0.9333333333333333
+        }
+      },
+      "J_minus_raw_brier_advantage": 0.0005153306589519833,
+      "J_vs_raw_exact_signflip_p": 0.375,
+      "precommit": [
+        {
+          "offset": 0,
+          "eligible": 130,
+          "unsafe": 0,
+          "mixed_prompt_count": 0,
+          "status": "not_estimable"
+        },
+        {
+          "offset": 16,
+          "eligible": 130,
+          "unsafe": 0,
+          "mixed_prompt_count": 0,
+          "status": "not_estimable"
+        },
+        {
+          "offset": 64,
+          "eligible": 70,
+          "unsafe": 0,
+          "mixed_prompt_count": 0,
+          "status": "not_estimable"
+        }
+      ],
+      "exact_prefix_rows": 463,
+      "prompt_end_branch_max_abs_J_difference": 0.0,
+      "future_unsafe_prediction_estimable": false,
+      "J_specific_gain_supported": false
+    },
+    "dialogue_capability": {
+      "family_count": 30,
+      "trajectory_count": 240,
+      "semantic_bad_positive_count": 0,
+      "false_premise": {
+        "accept": 0,
+        "challenge": 69,
+        "unparseable": 11
+      },
+      "tool_needed": {
+        "safe_denial_in_answer_slot": 1,
+        "safe_tool_or_clarify": 34,
+        "unparseable": 1,
+        "unsupported_specific_answer": 0
+      },
+      "multi_turn_correction": {
+        "both_old_and_new": 2,
+        "neither": 2,
+        "new_only": 16,
+        "old_only": 0
+      },
+      "completion_risk_t8": {
+        "J": {
+          "macro_auc": 0.6931096866175029,
+          "macro_within_prompt_auc": 0.6342592592592592
+        },
+        "logit": {
+          "macro_auc": 0.6036542010520463,
+          "macro_within_prompt_auc": 0.5347222222222222
+        },
+        "raw": {
+          "macro_auc": 0.5543444463953879,
+          "macro_within_prompt_auc": 0.49884259259259256
+        },
+        "surface_text": {
+          "macro_auc": 0.5516884958957026,
+          "macro_within_prompt_auc": 0.5752314814814815
+        }
+      },
+      "J_minus_raw_within_prompt_auc": 0.05902777777777778,
+      "J_minus_raw_bootstrap_95_ci": [
+        -0.2222222222222222,
+        0.34375
+      ],
+      "J_minus_raw_point_signflip_p": 0.359375,
+      "J_minus_raw_four_offset_max_p": 0.734130859375,
+      "completion_target": "cross-scenario transfer of eventual unparseable/unfinished response contract",
+      "semantic_bad_behavior_estimable": false,
+      "completion_risk_confirmed": false,
+      "J_specific_gain_supported": false
     }
   },
   "negative_controls": {
@@ -881,6 +1027,9 @@
     "metric_prior": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/jspace_metric_prior_audit_v1.json",
     "metric_prior_t64": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/jspace_metric_prior_audit_t64_v1.json",
     "metric_prior_t128": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/jspace_metric_prior_audit_t128_v1.json",
+    "epistemic_reliability": "artifacts/qwen3_5_4b/epistemic_abstention_pilot_v1/report.json",
+    "dialogue_capability": "artifacts/qwen3_5_4b/dialogue_capability_pilots_v1/report.json",
+    "dialogue_completion_transfer": "artifacts/qwen3_5_4b/dialogue_capability_pilots_v1/completion_cross_scenario_transfer_v1.json",
     "causal_audit": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/causality_audit.json",
     "steering": "artifacts/qwen3_5_4b/edge_case_steering_pilot_v1/report.json",
     "exploration_v2_spectral_subspace": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/spectral_subspace_audit_v1.json",
@@ -891,6 +1040,7 @@
     "exploration_v2_cheap_metric": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/cheap_metric_approximation_v1.json",
     "exploration_v2_few_task_curve": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/few_task_learning_curve_v1.json",
     "exploration_v2_selective_retry": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/selective_retry_policy_v1/report.json",
-    "exploration_v2_surface_capacity": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/surface_hash_capacity_v1.json"
+    "exploration_v2_surface_capacity": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/surface_hash_capacity_v1.json",
+    "exploration_v2_metric_prior_gating": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/metric_prior_task_gating_v1.json"
   }
 }
