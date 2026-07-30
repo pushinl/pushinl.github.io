@@ -310,6 +310,9 @@ function explorationPanel(explore) {
   const learning = explore?.few_task_learning_curve || {};
   const retry = explore?.selective_retry || {};
   const surface = explore?.surface_capacity || {};
+  const gating = explore?.metric_prior_gating || {};
+  const epistemic = explore?.epistemic_reliability || {};
+  const dialogue = explore?.dialogue_capability || {};
   const learningRows = Array.isArray(learning.rows) ? learning.rows : [];
   const firstLearning = learningRows[0] || {};
   const lastLearning = learningRows.at(-1) || {};
@@ -505,6 +508,32 @@ function explorationPanel(explore) {
           几何先验既能放大匹配，也会放大家族不匹配。
         </p>
       </article>
+
+      <article class="explore-card">
+        <header>${tag("candidate", "失效预警候选")}<span>09 · PRIOR MISMATCH</span></header>
+        <h3>多个回答过度同质时，J prior 可能放错重点</h3>
+        <div class="number-triplet">
+          <div><strong>${fmt(gating.focal_effective_rank, 3)}</strong><span>${escapeHtml(gating.focal_task)} rank</span></div>
+          <div><strong>${fmt(gating.gated_brier, 4)}</strong><span>gated Brier</span></div>
+          <div><strong>${fmt(gating.nested_gate_exact_permutation_p, 3)}</strong><span>gate p</span></div>
+        </div>
+        <p>
+          ${escapeHtml(gating.focal_task)} 要求精确入口名
+          <code>${escapeHtml(gating.contract_expected_entrypoint)}</code>；
+          ${gating.contract_wrong_trajectory_count} 条错误回答都理解算法，却改坏了接口名。
+          它的 sibling effective rank 为 ${fmt(gating.focal_effective_rank, 3)}，
+          其他题为 ${fmt(gating.other_effective_rank_range?.[0], 3)}–
+          ${fmt(gating.other_effective_rank_range?.[1], 3)}。nested gate 把 Brier 从
+          ${fmt(gating.always_J_brier, 4)} 降到 ${fmt(gating.gated_brier, 4)}，
+          但只有 ${gating.task_count} 题、需要 ${escapeHtml(gating.requires_siblings)}
+          个 sibling，且该信号并非 J 独有。
+        </p>
+        <p>
+          更直接的 entrypoint guard 捕获 ${gating.guard_alarm_count}/${gating.contract_wrong_trajectory_count}
+          个该类错误、${gating.guard_false_alarm_count} 误报；全错误 recall
+          ${pct(gating.guard_wrong_recall)}。可验证契约应优先于软 probe。
+        </p>
+      </article>
     </div>
 
     <div class="retry-audit">
@@ -539,23 +568,75 @@ function explorationPanel(explore) {
       <strong>这一轮得到的可执行结论</strong>
       <p>
         下一轮应测试“按 checkpoint 分开的 probe bank + 新题族校准”，并把
-        Mbpp/614 这种 prior mismatch 当作一等失败模式；不应继续把资源投入到
+        Mbpp/614 这种 prior mismatch 当作一等失败模式；确定性契约检查优先，
+        effective-rank 只作为待前瞻验证的 batch gate。不应继续把资源投入到
         Top-K 词解释、单一 J Δ 阈值、无监督离群点或当前自适应 retry。
         若最终只部署一个冻结标量评分器，则直接部署融合后的 raw 方向。
       </p>
     </div>
 
     <div class="next-pilot">
-      ${tag("candidate", "正在做 · 尚无结果")}
+      ${tag("candidate", "跨场景新结果 · J 无独有增益")}
       <div>
-        <span>NEXT · EPISTEMIC RELIABILITY</span>
-        <h3>从 coding correctness 扩展到“何时应该停止胡编”</h3>
+        <span>EPISTEMIC RELIABILITY · ${epistemic.prompt_count} MATCHED PROMPTS</span>
+        <h3>模型内部强烈表示“信息够不够”，但当前不需要 J-space</h3>
+        <div class="number-triplet">
+          <div><strong>${fmt(epistemic.prompt_end?.J?.auc, 3)}</strong><span>J AUC</span></div>
+          <div><strong>${fmt(epistemic.prompt_end?.raw?.auc, 3)}</strong><span>raw AUC</span></div>
+          <div><strong>${fmt(epistemic.prompt_end?.logit_uncertainty?.auc, 3)}</strong><span>entropy AUC</span></div>
+        </div>
         <p>
-          下一组 matched pilot 会为同一问题构造
-          <b>信息完整 / 缺关键信息 / 输入互相矛盾</b> 三种条件，并分别测量：
-          输入客观上是否可回答、模型是否做出恰当 abstain、若继续回答是否随后产生
-          unsupported claim。这里展示的是已冻结的实验问题，不是已有正结果；
-          三个标签必须分开，避免把“题目不可答”和“模型答错”混为一谈。
+          ${epistemic.family_count} 个 family 构造信息完整、缺关键事实、矛盾和歧义
+          四种最小反事实；原始 ${epistemic.original_prompt_count} prompts /
+          ${epistemic.original_trajectory_count} 条轨迹，经标签审计排除
+          ${epistemic.excluded_prompt_count} 个无效 prompt 后分析
+          ${epistemic.prompt_count} / ${epistemic.trajectory_count}。prompt-end
+          whole-family held-out 下，J Brier ${fmt(epistemic.prompt_end?.J?.brier, 4)}，
+          raw ${fmt(epistemic.prompt_end?.raw?.brier, 4)}；J 相对 raw 只改善
+          ${signed(epistemic.J_minus_raw_brier_advantage, 5)}，
+          exact sign-flip p=${fmt(epistemic.J_vs_raw_exact_signflip_p, 3)}。
+          结论是 residual/J 都携带很强的输入充分性表征，而非 J 新增了线性信息。
+        </p>
+        <p>
+          ${epistemic.unanswerable_clear_decision_count} 条不充分输入的明确决策中有
+          ${epistemic.unsafe_claim_count} 次无依据具体回答
+          （${pct(epistemic.unanswerable_unsafe_claim_rate)}），因此“在胡编前预测未来
+          unsafe claim”严格不可估计。低错误率说明显式
+          <code>ANSWER / CLARIFY</code> 契约本身有效，也说明下一轮必须构造更自然、
+          不带强制 abstain 提示的困难样本，不能把输入类型分类冒充自知之明。
+        </p>
+      </div>
+    </div>
+
+    <div class="next-pilot">
+      ${tag("negative", "日常对话 · 核心目标不可估")}
+      <div>
+        <span>DIALOGUE RELIABILITY · ${dialogue.family_count} FAMILIES</span>
+        <h3>没有把格式失败冒充迎合或胡编；只留下一个未确认的 completion pocket</h3>
+        <div class="number-triplet">
+          <div><strong>${dialogue.semantic_bad_positive_count}</strong><span>语义坏行为</span></div>
+          <div><strong>${fmt(dialogue.completion_risk_t8?.J?.macro_auc, 3)}</strong><span>t8 J AUC</span></div>
+          <div><strong>${fmt(dialogue.J_minus_raw_four_offset_max_p, 3)}</strong><span>4-offset max p</span></div>
+        </div>
+        <p>
+          ${dialogue.trajectory_count} 条错误前提、工具缺失和多轮纠正轨迹中：
+          错误前提被接受 ${dialogue.false_premise?.accept || 0} 次，
+          无证据具体回答 ${dialogue.tool_needed?.unsupported_specific_answer || 0} 次，
+          只沿用旧值 ${dialogue.multi_turn_correction?.old_only || 0} 次。
+          因三类 semantic bad target 都没有正例，J/raw 幻觉预警 AUC 均不可估。
+        </p>
+        <p>
+          对更窄的“最终没有完成 final marker”，t=8 跨场景 macro AUC：
+          J ${fmt(dialogue.completion_risk_t8?.J?.macro_auc, 3)}、raw
+          ${fmt(dialogue.completion_risk_t8?.raw?.macro_auc, 3)}、logit
+          ${fmt(dialogue.completion_risk_t8?.logit?.macro_auc, 3)}、surface
+          ${fmt(dialogue.completion_risk_t8?.surface_text?.macro_auc, 3)}。
+          但 family-paired J−raw within-prompt 仅
+          ${signed(dialogue.J_minus_raw_within_prompt_auc, 3)}，
+          95% CI [${fmt(dialogue.J_minus_raw_bootstrap_95_ci?.[0], 3)},
+          ${fmt(dialogue.J_minus_raw_bootstrap_95_ci?.[1], 3)}]，多时间点校正后
+          p=${fmt(dialogue.J_minus_raw_four_offset_max_p, 3)}。它不是已确认信号，
+          更不是事实性 hallucination detector。
         </p>
       </div>
     </div>
