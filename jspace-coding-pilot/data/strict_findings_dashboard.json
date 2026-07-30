@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-07-30T17:01:59.553119+00:00",
+  "generated_at": "2026-07-30T17:13:10.167329+00:00",
   "title": "Qwen3.5-4B · J-space correctness exploration",
   "study": {
     "model": "Qwen3.5-4B",
@@ -966,6 +966,114 @@
       "semantic_bad_behavior_estimable": false,
       "completion_risk_confirmed": false,
       "J_specific_gain_supported": false
+    },
+    "topk_information_loss": {
+      "task_count": 6,
+      "trajectory_count": 48,
+      "top5_energy_retained": 0.0016427556802227627,
+      "top50_energy_retained": 0.009461530241727209,
+      "full_J": {
+        "brier": 0.19714796178311186,
+        "log_loss": 0.5822288025736333,
+        "mean_probability_margin": 0.14115962813369543,
+        "paired_accuracy": 0.7277777777777779
+      },
+      "raw": {
+        "brier": 0.2411082424345733,
+        "log_loss": 0.6750799908714477,
+        "mean_probability_margin": 0.023401225419328552,
+        "paired_accuracy": 0.5833333333333334
+      },
+      "top5_score_sparse": {
+        "brier": 0.2454343066707461,
+        "log_loss": 0.6840122159476484,
+        "mean_probability_margin": 0.009316082904868387,
+        "paired_accuracy": 0.686111111111111
+      },
+      "top50_score_sparse": {
+        "brier": 0.23813356723111778,
+        "log_loss": 0.6692260352116074,
+        "mean_probability_margin": 0.02832608002405242,
+        "paired_accuracy": 0.6694444444444444
+      },
+      "top5_minnorm_reconstruction": {
+        "brier": 0.21118581352305263,
+        "log_loss": 0.6116171043674331,
+        "mean_probability_margin": 0.10799364729332765,
+        "paired_accuracy": 0.7111111111111111
+      },
+      "top50_minnorm_reconstruction": {
+        "brier": 0.1932882410600055,
+        "log_loss": 0.5756048557034702,
+        "mean_probability_margin": 0.16920326256274906,
+        "paired_accuracy": 0.7444444444444445
+      },
+      "top5_reconstructed_direction_cosine_squared": 0.07204297877559768,
+      "top50_reconstructed_direction_cosine_squared": 0.11439737169952768,
+      "temporal_top1_same_count": 1,
+      "temporal_comparison_count": 48,
+      "temporal_top5_jaccard_mean": 0.011243386243386243,
+      "temporal_top50_jaccard_mean": 0.02340215504369571,
+      "top50_reconstruction_minus_full_J_brier": -0.0038597207231063635,
+      "top50_reconstruction_minus_full_J_brier_ci": [
+        -0.02569096404472312,
+        0.024279711793793863
+      ],
+      "posthoc_setting_count": 20,
+      "decoded_strings_sufficient": false
+    },
+    "epistemic_execution_failure": {
+      "complete_trajectory_count": 48,
+      "outcome_categories": {
+        "clarify_instead_of_answer": 2,
+        "correct_explicit_answer": 38,
+        "unparseable": 1,
+        "wrong_explicit_answer": 7
+      },
+      "estimable_offset": 16,
+      "eligible_answer_count": 45,
+      "wrong_answer_count": 7,
+      "mixed_prompt_count": 4,
+      "systems": {
+        "J": {
+          "pooled_auc": 0.5375939849624061,
+          "pooled_brier": 0.13637118346163776,
+          "same_prompt_auc": 0.5416666666666666,
+          "paired_accuracy": 0.5384615384615384
+        },
+        "all_visible_surface": {
+          "pooled_auc": 0.7180451127819549,
+          "pooled_brier": 0.12958668779279756,
+          "same_prompt_auc": 0.7708333333333333,
+          "paired_accuracy": 0.8461538461538461
+        },
+        "raw": {
+          "pooled_auc": 0.4774436090225564,
+          "pooled_brier": 0.14089084053043197,
+          "same_prompt_auc": 0.41666666666666663,
+          "paired_accuracy": 0.3076923076923077
+        },
+        "visible_output_surface": {
+          "pooled_auc": 0.37969924812030076,
+          "pooled_brier": 0.13925766594100303,
+          "same_prompt_auc": 0.75,
+          "paired_accuracy": 0.8461538461538461
+        }
+      },
+      "J_calibration_mean_risk": 0.09015736945594477,
+      "observed_wrong_rate": 0.15555555555555556,
+      "J_vs_raw_brier_advantage": 0.004176288430558394,
+      "J_vs_raw_bonferroni_p": 1.0,
+      "insufficiency_to_execution_auc": {
+        "J": 0.5526315789473685,
+        "raw": 0.5676691729323309
+      },
+      "same_stage_direction_cosine": {
+        "J": 0.0041658974710180674,
+        "raw": 0.0025413853308224087
+      },
+      "confirmed_early_warning": false,
+      "risk_axes_same": false
     }
   },
   "negative_controls": {
@@ -1030,6 +1138,7 @@
     "epistemic_reliability": "artifacts/qwen3_5_4b/epistemic_abstention_pilot_v1/report.json",
     "dialogue_capability": "artifacts/qwen3_5_4b/dialogue_capability_pilots_v1/report.json",
     "dialogue_completion_transfer": "artifacts/qwen3_5_4b/dialogue_capability_pilots_v1/completion_cross_scenario_transfer_v1.json",
+    "epistemic_execution_failure": "artifacts/qwen3_5_4b/epistemic_abstention_pilot_v1/execution_failure_audit_v1.json",
     "causal_audit": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/causality_audit.json",
     "steering": "artifacts/qwen3_5_4b/edge_case_steering_pilot_v1/report.json",
     "exploration_v2_spectral_subspace": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/spectral_subspace_audit_v1.json",
@@ -1041,6 +1150,7 @@
     "exploration_v2_few_task_curve": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/few_task_learning_curve_v1.json",
     "exploration_v2_selective_retry": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/selective_retry_policy_v1/report.json",
     "exploration_v2_surface_capacity": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/surface_hash_capacity_v1.json",
-    "exploration_v2_metric_prior_gating": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/metric_prior_task_gating_v1.json"
+    "exploration_v2_metric_prior_gating": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/metric_prior_task_gating_v1.json",
+    "exploration_v2_topk_information_loss": "artifacts/qwen3_5_4b/mbpp_failure_pilot10/prompt_end_exact_samples_v1/fixed_dense_offsets_layer24_exactprefix_v2/topk_information_loss_v1.json"
   }
 }
