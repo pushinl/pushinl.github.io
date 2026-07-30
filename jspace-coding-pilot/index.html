@@ -5,154 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="沿 Qwen3.5-4B 的完整失败输出，逐阶段查看 J-space 词汇方向如何变化。"
+      content="Qwen3.5-4B 的严格 exact-prefix J-space coding 正确性探索：什么成立，什么不成立，以及 10 道原题。"
     />
-    <meta name="theme-color" content="#f3f1ea" />
-    <title>Qwen3.5-4B · J-space 全程回放</title>
+    <meta name="theme-color" content="#f5f2e9" />
+    <title>J-space × Coding · 严格实验结论</title>
     <link rel="stylesheet" href="styles.css" />
     <script type="module" src="app.js"></script>
   </head>
   <body>
-    <a class="skip-link" href="#replay">跳到 J-space 回放</a>
-
-    <header class="site-header">
-      <a class="brand" href="#top" aria-label="回到页面顶部">
-        <span class="brand-mark" aria-hidden="true">J</span>
-        <span>
-          <strong>J-space 全程回放</strong>
-          <small>QWEN3.5-4B · CODING TRACE</small>
-        </span>
-      </a>
-      <div class="header-status" id="headerStatus" role="status" aria-live="polite">
-        <i aria-hidden="true"></i>
-        <span>正在读取 3 条失败 trace</span>
-      </div>
-    </header>
-
-    <main id="top">
-      <section class="hero shell" aria-labelledby="pageTitle">
-        <div class="hero-copy">
-          <p class="eyebrow">FULL TRACE · J-SPACE REPLAY</p>
-          <h1 id="pageTitle">模型输出一路向前，<br />J-space 如何换挡？</h1>
-          <p class="hero-lead">
-            只做一件事：沿着完整失败输出，比较每个阶段模型已经写下的文本，
-            以及同一位置的 J-space 词汇方向，直接看它从开头到结尾如何变化。
-          </p>
-        </div>
-        <aside class="reading-guide" aria-label="页面阅读方式">
-          <span>怎么读这张图</span>
-          <ol>
-            <li><b>看完整路线</b><small>六个阶段覆盖从开头到最终输出</small></li>
-            <li><b>点击一个阶段</b><small>同时查看原文与聚合 J-space</small></li>
-            <li><b>找走偏区间</b><small>只在文本证据足够时做人工标注</small></li>
-          </ol>
-        </aside>
-      </section>
-
-      <section class="replay shell" id="replay" aria-labelledby="journeyTitle">
-        <div class="trace-toolbar">
-          <label class="trace-picker">
-            <span>选择失败题目</span>
-            <select id="traceSelect" disabled aria-label="选择失败 trace">
-              <option>载入中…</option>
-            </select>
-          </label>
-          <div class="trace-identity">
-            <span id="modelName">—</span>
-            <code id="taskId">—</code>
-            <span id="traceVariant">—</span>
-          </div>
-          <div class="simple-mode">
-            <i aria-hidden="true"></i>
-            <span>全 trace J-space 模式</span>
-          </div>
-        </div>
-
-        <div class="load-error" id="loadError" hidden role="alert">
-          <strong>实验数据未能载入</strong>
-          <p id="loadErrorMessage">请确认 JSON 与页面位于约定的相对路径。</p>
-        </div>
-
-        <article class="case-summary">
-          <div class="summary-index" aria-hidden="true">01</div>
-          <div class="summary-failure">
-            <p class="eyebrow">最终错在哪里</p>
-            <h2 id="finalFailure">等待实验数据…</h2>
-            <div class="summary-proof">
-              <span>失败类型 <b id="failureKind">—</b></span>
-              <span>最小反例 <code id="counterexample">—</code></span>
-            </div>
-          </div>
-          <div class="summary-onset">
-            <span>现有快照最早能确认的走偏区间</span>
-            <strong id="errorWindow">—</strong>
-            <p id="errorObservation">等待人工复核标注…</p>
-          </div>
-        </article>
-
-        <section class="journey-panel" aria-labelledby="journeyTitle">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">OUTPUT 0% → 100%</p>
-              <h2 id="journeyTitle">整段输出的 J-space 变化路线</h2>
-            </div>
-            <div class="stage-legend" aria-label="阶段标记说明">
-              <span><i class="shift"></i>词汇方向换挡</span>
-              <span><i class="error"></i>原文已能确认走偏</span>
-            </div>
-          </div>
-          <p class="journey-summary" id="journeySummary">
-            正在组织整段输出的阶段故事…
-          </p>
-          <nav class="stage-rail" id="stageRail" aria-label="跳转到输出阶段">
-            <span class="stage-placeholder">正在绘制完整 J-space 路线…</span>
-          </nav>
-          <p class="track-note">
-            每张卡是一处真实的 J-lens 扫描快照；卡片中的词不是模型输出，而是该位置
-            J-space 投影回词表后最接近的词汇方向。
-          </p>
-          <section class="stage-sequence" id="stageSequence" aria-label="六个输出阶段详情">
-            <div class="sequence-placeholder">正在生成六阶段 J-space 回放…</div>
-          </section>
-        </section>
-
-        <section class="source-panel" aria-labelledby="sourceTitle">
-          <div class="panel-heading compact">
-            <div>
-              <p class="eyebrow">SOURCE TEXT</p>
-              <h2 id="sourceTitle">核对原题与完整失败输出</h2>
-            </div>
-          </div>
-          <div class="source-grid">
-            <details>
-              <summary>查看原始 coding 题 <span>problem prompt</span></summary>
-              <pre id="problemPrompt" tabindex="0">等待实验数据…</pre>
-            </details>
-            <details>
-              <summary>查看模型完整输出 <span>full failed trace</span></summary>
-              <pre id="responseText" tabindex="0">等待实验数据…</pre>
-            </details>
-          </div>
-        </section>
-
-        <aside class="reading-boundary">
-          <strong>怎么理解这些词？</strong>
-          <p>
-            它们是 basic Jacobian lens 把中间状态投影回词表得到的近邻，
-            适合观察“语义方向何时换挡”，但不等于模型真实说过这些词，也不等于完整思维。
-            “开始走偏”的标记来自同一阶段的原文人工复核，不由词云自动判定。
-          </p>
-        </aside>
-      </section>
-    </main>
-
-    <footer>
-      <span>Qwen3.5-4B · 3 real MBPP/MBPP+ failure traces</span>
-      <a href="#top">回到顶部 ↑</a>
-    </footer>
-
+    <div id="app">
+      <main class="loading">
+        <span>J</span>
+        <h1>正在载入严格实验结果</h1>
+        <p>strict exact-prefix · Qwen3.5-4B · MBPP+</p>
+      </main>
+    </div>
     <noscript>
-      <div class="noscript">此静态回放需要 JavaScript 才能读取实验 JSON。</div>
+      <main class="loading error">
+        <span>!</span>
+        <h1>需要启用 JavaScript</h1>
+        <p>页面只用 JavaScript 读取同目录下的本地实验 JSON。</p>
+      </main>
     </noscript>
   </body>
 </html>
