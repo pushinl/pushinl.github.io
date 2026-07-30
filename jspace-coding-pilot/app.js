@@ -313,6 +313,8 @@ function explorationPanel(explore) {
   const gating = explore?.metric_prior_gating || {};
   const epistemic = explore?.epistemic_reliability || {};
   const dialogue = explore?.dialogue_capability || {};
+  const topkLoss = explore?.topk_information_loss || {};
+  const execution = explore?.epistemic_execution_failure || {};
   const learningRows = Array.isArray(learning.rows) ? learning.rows : [];
   const firstLearning = learningRows[0] || {};
   const lastLearning = learningRows.at(-1) || {};
@@ -532,6 +534,64 @@ function explorationPanel(explore) {
           更直接的 entrypoint guard 捕获 ${gating.guard_alarm_count}/${gating.contract_wrong_trajectory_count}
           个该类错误、${gating.guard_false_alarm_count} 误报；全错误 recall
           ${pct(gating.guard_wrong_recall)}。可验证契约应优先于软 probe。
+        </p>
+      </article>
+
+      <article class="explore-card">
+        <header>${tag("negative", "关键词严重有损")}<span>10 · TOP-K INFORMATION LOSS</span></header>
+        <h3>Top‑5 不是五个“思维词”，只保留约 ${pct(topkLoss.top5_energy_retained, 3)} 的 readout 能量</h3>
+        <div class="number-triplet">
+          <div><strong>${pct(topkLoss.top5_energy_retained, 3)}</strong><span>Top‑5 energy</span></div>
+          <div><strong>${fmt(topkLoss.top5_score_sparse?.brier, 4)}</strong><span>Top‑5 Brier</span></div>
+          <div><strong>${topkLoss.temporal_top1_same_count}/${topkLoss.temporal_comparison_count}</strong><span>Top‑1 跨阶段不变</span></div>
+        </div>
+        <p>
+          直接使用 Top‑5 token ID + score，Brier
+          ${fmt(topkLoss.top5_score_sparse?.brier, 4)}、margin
+          ${fmt(topkLoss.top5_score_sparse?.mean_probability_margin, 4)}；
+          完整 J 是 ${fmt(topkLoss.full_J?.brier, 4)} /
+          ${fmt(topkLoss.full_J?.mean_probability_margin, 4)}。即使显示 50 个词也只保留
+          ${pct(topkLoss.top50_energy_retained, 3)} 能量，t192→t256 的 support
+          Jaccard 均值只有 ${fmt(topkLoss.temporal_top50_jaccard_mean, 3)}。
+        </p>
+        <p>
+          若把 token+精确 score 当成 unembedding 方程做最小范数重建，Top‑50
+          Brier 可到 ${fmt(topkLoss.top50_minnorm_reconstruction?.brier, 4)}；
+          但它只恢复 ${pct(topkLoss.top50_reconstructed_direction_cosine_squared)}
+          的 J 方向，且相对完整 J 的差
+          ${signed(topkLoss.top50_reconstruction_minus_full_J_brier, 4)}
+          的 95% CI 跨 0，还是 ${topkLoss.posthoc_setting_count} 个事后设置之一。
+          词背后的几何约束可能可压缩，字符串本身不够做 failure detector。
+        </p>
+      </article>
+
+      <article class="explore-card">
+        <header>${tag("negative", "另一条风险轴")}<span>11 · EXECUTION FAILURE</span></header>
+        <h3>模型知道信息齐全，不等于它知道自己会算错</h3>
+        <div class="number-triplet">
+          <div><strong>${fmt(execution.systems?.J?.pooled_auc, 3)}</strong><span>J AUC</span></div>
+          <div><strong>${fmt(execution.systems?.all_visible_surface?.pooled_auc, 3)}</strong><span>visible AUC</span></div>
+          <div><strong>${fmt(execution.same_stage_direction_cosine?.J, 3)}</strong><span>两风险轴 cosine</span></div>
+        </div>
+        <p>
+          完整信息的 ${execution.complete_trajectory_count} 条轨迹中，
+          ${execution.outcome_categories?.correct_explicit_answer} 条明确正确、
+          ${execution.outcome_categories?.wrong_explicit_answer} 条明确错误。
+          唯一可估的提交前 t=${execution.estimable_offset} 有
+          ${execution.eligible_answer_count} 条 / ${execution.wrong_answer_count} 错；
+          J AUC ${fmt(execution.systems?.J?.pooled_auc, 3)}、raw
+          ${fmt(execution.systems?.raw?.pooled_auc, 3)}，四时点校正
+          p=${fmt(execution.J_vs_raw_bonferroni_p, 3)}。
+        </p>
+        <p>
+          “信息不足”probe 迁移到这些执行错误时，J/raw AUC 仅
+          ${fmt(execution.insufficiency_to_execution_auc?.J, 3)} /
+          ${fmt(execution.insufficiency_to_execution_auc?.raw, 3)}，同阶段方向
+          cosine 约 ${fmt(execution.same_stage_direction_cosine?.J, 3)} /
+          ${fmt(execution.same_stage_direction_cosine?.raw, 3)}。这支持把
+          answerability 与 execution correctness 分开监控；但只有
+          ${execution.mixed_prompt_count} 个 mixed prompts，尚不能把“近乎正交”
+          当作普适机制结论。
         </p>
       </article>
     </div>
