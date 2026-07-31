@@ -323,6 +323,9 @@ function explorationPanel(explore) {
   const gated = explore?.gated_clarification_intervention || {};
   const oodAnswerability = explore?.ood_answerability_scenarios || {};
   const causalPatch = explore?.answerability_causal_patch || {};
+  const randomAlignment = explore?.ood_random_alignment_control || {};
+  const lowFprGate = explore?.prospective_low_fpr_gate || {};
+  const codingSelector = explore?.coding_selector_prospective || {};
   const JDepthRows = layerwise.systems?.J?.rows || [];
   const rawDepthRows = layerwise.systems?.raw?.rows || [];
   const J16 = JDepthRows.find((row) => row.layer === 16) || {};
@@ -797,8 +800,8 @@ function explorationPanel(explore) {
       </article>
 
       <article class="explore-card">
-        <header>${tag("positive", "第三批冻结迁移")}<span>18 · LEXEME-FREE OOD</span></header>
-        <h3>去掉显式“缺失”词后，answerability 仍迁移，且 J 的校准首次稳健优于 raw</h3>
+        <header>${tag("candidate", "第三批冻结迁移")}<span>18 · LEXEME-FREE OOD</span></header>
+        <h3>去掉显式“缺失”词后 answerability 仍迁移；J 校准优于 raw，但还不能归因于官方 J</h3>
         <div class="number-triplet">
           <div><strong>${fmt(oodAnswerability.systems?.J?.auc, 3)}</strong><span>J AUC</span></div>
           <div><strong>${fmt(oodAnswerability.systems?.J?.brier, 3)}</strong><span>J Brier</span></div>
@@ -820,7 +823,9 @@ function explorationPanel(explore) {
           结果是 J Brier 比 raw 低
           ${fmt(oodAnswerability.J_vs_raw_brier_advantage, 4)}，6 项计划比较 Holm
           p=${fmt(oodAnswerability.J_vs_raw_brier_holm_6_p, 4)}。
-          这支持 J 作为小样本校准的 metric prior，而不是新增信息。场景分解也暴露
+          这说明某种 J-space 预条件在这个小样本面板上优于普通 raw ridge，
+          但后续同奇异谱随机对照没有确认官方 input alignment 的特异性。
+          场景分解也暴露
           边界：RAG / tool matched accuracy 都是
           ${pct(oodAnswerability.J_by_scenario?.rag_evidence_gap?.matched_ranking_accuracy)}，
           多轮指代只有
@@ -861,6 +866,126 @@ function explorationPanel(explore) {
           probe direction 当作行为旋钮。
         </p>
       </article>
+
+      <article class="explore-card">
+        <header>${tag("negative", "256 个同谱随机对照")}<span>20 · ALIGNMENT CONTROL</span></header>
+        <h3>官方 Jacobian 方向没有胜过同奇异谱随机旋转；该面板未确认“J 特殊对齐”</h3>
+        <div class="number-triplet">
+          <div><strong>${randomAlignment.official_rank?.brier?.official_best_first_rank_among_257}/257</strong><span>official Brier 排名</span></div>
+          <div><strong>${fmt(randomAlignment.official_rank?.brier?.add_one_rank_p, 4)}</strong><span>seed-rank p</span></div>
+          <div><strong>${fmt(randomAlignment.random_JQ?.brier?.mean, 3)}</strong><span>random JQ 平均 Brier</span></div>
+        </div>
+        <p>
+          对固定 old45→OOD24、C=0.01 和同一 solver，只把 J 的 hidden-input
+          方向随机旋转，同时严格保持全部奇异值。official Brier 为
+          ${fmt(randomAlignment.official_J?.brier, 3)}；虽然低于 random 平均
+          ${fmt(randomAlignment.random_JQ?.brier?.mean, 3)}，仍有
+          ${randomAlignment.official_rank?.brier?.random_at_least_as_good_count}/
+          ${randomAlignment.control_count} 个随机 JQ 不差于 official，
+          add-one p=${fmt(randomAlignment.official_rank?.brier?.add_one_rank_p, 4)}。
+          以 12 个 family 配对后，random−official Brier=${signed(
+            randomAlignment.family_brier_effect?.observed_mean_effect,
+            4,
+          )}，Holm p=${fmt(randomAlignment.family_brier_effect?.holm_2_p, 4)}，
+          仍未通过。
+        </p>
+        <p>
+          AUC / matched-ranking 的 seed-rank p 分别为
+          ${fmt(randomAlignment.official_rank?.auc?.add_one_rank_p, 4)} /
+          ${fmt(randomAlignment.official_rank?.matched_ranking?.add_one_rank_p, 4)}；
+          random matched-ranking 平均
+          ${pct(randomAlignment.random_JQ?.matched_ranking?.mean)}，反而高于
+          official 的 ${pct(randomAlignment.official_J?.matched_ranking)}。
+          因而第三面板不再支持“官方 Jacobian 对齐抓住了特殊可靠性方向”。
+          random 平均 Brier 仍描述性优于 raw 的
+          ${fmt(randomAlignment.raw_brier, 3)}，值得继续研究的是一般预条件/
+          正则几何，而不是把 J-space 词语解释成隐藏想法。
+        </p>
+      </article>
+
+      <article class="explore-card">
+        <header>${tag("negative", "独立第四面板 · STOP")}<span>21 · LOW-FPR GATE</span></header>
+        <h3>风险排序再次迁移，但低误触阈值崩溃：现在还不能据此自动停答</h3>
+        <div class="number-triplet">
+          <div><strong>${fmt(lowFprGate.primary?.J?.auc, 3)}</strong><span>J AUC</span></div>
+          <div><strong>${pct(lowFprGate.primary?.J?.false_positive_rate)}</strong><span>完整题误触发</span></div>
+          <div><strong>${pct(lowFprGate.primary?.J?.true_positive_rate)}</strong><span>不足题召回</span></div>
+        </div>
+        <p>
+          第四批 ${lowFprGate.family_count} 个全新 family / ${lowFprGate.prompt_count}
+          个 prompt 在任何新 forward 前冻结。阈值
+          ${fmt(lowFprGate.primary?.J?.threshold, 6)}
+          只来自上一批 naturalistic complete prompts 的最大分数。预注册规则要求
+          完整题最多误拦 1/16、同时至少抓住 8/16 个不足题；实际是
+          ${lowFprGate.primary?.J?.false_positive_count}/16 误拦和
+          ${lowFprGate.primary?.J?.true_positive_count}/16 抓住。因此严格判定
+          <strong>STOP</strong>，没有继续运行行为生成。
+        </p>
+        <p>
+          这不是“内部完全没信号”：J matched ranking 为
+          ${pct(lowFprGate.primary?.J?.matched_ranking)}，Brier 比 raw 平均好
+          ${fmt(lowFprGate.J_vs_raw_brier_advantage, 4)}，逐 family 的
+          J−raw Brier 优势 16/16 同方向，
+          exact p=${fmt(lowFprGate.J_vs_raw_brier_exact_p, 5)}。预注册的
+          combined-domain J 甚至达到 AUC
+          ${fmt(lowFprGate.secondary?.J?.auc, 3)}，但完整题 FPR 仍有
+          ${pct(lowFprGate.secondary?.J?.false_positive_rate)}。
+          结论是：<strong>相对区分能力不等于可迁移的绝对阈值</strong>。
+          事后只用目标域“已知可答”canary 做 exhaustive split 时，8 条 canary
+          的 held-out FPR 均值为
+          ${pct(lowFprGate.target_canary_posthoc?.J?.n8_heldout_complete_fpr_mean)}，
+          但 J / raw 的不足题 TPR 均值分别只有
+          ${pct(lowFprGate.target_canary_posthoc?.J?.n8_insufficient_tpr_mean)} /
+          ${pct(lowFprGate.target_canary_posthoc?.raw?.n8_insufficient_tpr_mean)}；
+          raw 并不差。这只是 post-hoc 路线提示。真正部署必须冻结目标域 canary
+          规则，再到第五批新 family 验证，不能直接把 0.5 或旧域阈值写进
+          retry/拒答逻辑。
+        </p>
+      </article>
+
+      <article class="explore-card">
+        <header>${tag("negative", "20 道新 coding 题 · STOP")}<span>22 · PROSPECTIVE SELECTOR</span></header>
+        <h3>旧 6 题上的 J 排序优势没有复现；J 与随机的 selected-pass@4 逐题结果完全相同</h3>
+        <div class="number-triplet">
+          <div><strong>${pct(codingSelector.selected_pass?.J?.top4)}</strong><span>J selected pass@4</span></div>
+          <div><strong>${pct(codingSelector.selected_pass?.raw?.top4)}</strong><span>raw selected pass@4</span></div>
+          <div><strong>${pct(codingSelector.selected_pass?.random?.top4)}</strong><span>random selected pass@4</span></div>
+        </div>
+        <p>
+          冻结旧 6 个 mixed 题训练的 L24/t256/C=.01 ranker 后，在
+          ${codingSelector.task_count} 道未见 MBPP+ 题上各采样 8 条，共
+          ${codingSelector.trajectory_count} 条轨迹（
+          ${codingSelector.passing_trajectory_count} 条通过）。
+          候选池 pass@8 只有 ${pct(codingSelector.candidate_pool_pass_at_8)}：
+          ${codingSelector.task_outcome_counts?.mixed} 题 mixed、
+          ${codingSelector.task_outcome_counts?.all_fail} 题 8 条全错、
+          ${codingSelector.task_outcome_counts?.all_pass} 题全对。
+          主终点 J−raw 为
+          ${signed(codingSelector.J_minus_raw_top4?.mean_difference, 2)}，
+          95% bootstrap [
+          ${signed(codingSelector.J_minus_raw_top4?.bootstrap_95_interval?.[0], 2)},
+          ${signed(codingSelector.J_minus_raw_top4?.bootstrap_95_interval?.[1], 2)}]，
+          未校正 exact p=${fmt(codingSelector.J_minus_raw_top4?.raw_two_sided_exact_signflip_p, 1)}。
+        </p>
+        <p>
+          一次只选一条时，J/raw/logit/random 分别为
+          ${pct(codingSelector.selected_pass?.J?.top1)} /
+          ${pct(codingSelector.selected_pass?.raw?.top1)} /
+          ${pct(codingSelector.selected_pass?.logit?.top1)} /
+          ${pct(codingSelector.selected_pass?.random?.top1)}；11 个 mixed 题上的
+          pairwise AUC 则为
+          ${fmt(codingSelector.mixed_task_pairwise_auc?.J, 3)} /
+          ${fmt(codingSelector.mixed_task_pairwise_auc?.raw, 3)} /
+          ${fmt(codingSelector.mixed_task_pairwise_auc?.logit, 3)}。
+          <strong>能在 sibling pairs 上略微排序，不保证能改善实际选中率。</strong>
+          selected pass@4 的含义是 8 条已经全部生成，再由外部 EvalPlus
+          verifier 按排序最多检查 4 条；它不是 J 自己判断通过，也没有证明真实
+          token 节省。协议有 ${codingSelector.protocol_deviation_count} 项已公开、
+          不涉及按 outcome 选题的偏差，因此证据等级是
+          ${escapeHtml(codingSelector.evidence_grade)}，足以停止当前 J
+          inference-time selector，但不是最高等级确认实验。
+        </p>
+      </article>
     </div>
 
     <div class="retry-audit">
@@ -894,13 +1019,16 @@ function explorationPanel(explore) {
     <div class="exploration-takeaway">
       <strong>这一轮得到的可执行结论</strong>
       <p>
-        当前路线已收敛为“按风险类型、按生成阶段的 probe bank”：信息不足
-        monitor 驱动的安全提示确实减少硬猜，但 J/raw/always-reminder 当前效果
-        相同；下一步是降低完整题误触发，而不是宣传 J 特异收益。
-        execution、grounding、tool need 和 completion 必须各自建模。确定性契约
-        检查优先，Mbpp/614 这类 prior mismatch 是一等失败模式。不应继续把资源
-        投入到单样本 Top-K 词、通用 J Δ 阈值、无监督离群点或当前自适应 retry。
-        若最终只部署一个冻结标量评分器，则直接部署融合后的 raw 方向。
+        当前应停止三条路线：把 Top‑K 词当思维内容、用跨域固定阈值自动停答、
+        以及当前 L24/t256 J coding selector。真正留下的是：
+        <strong>模型 residual 中能读出任务特定风险，但 decodability 不等于
+        causal control，也不等于 deployability</strong>。若继续，应把
+        answerability、execution、grounding、tool need 和 completion 分头建模；
+        在目标域用独立 canary 校准，并把 raw、logit、同谱随机 JQ 和确定性
+        verifier 作为强制对照。J 更值得作为“非 J 特异的一般各向异性
+        metric/训练正则”的候选研究，而不是 official Jacobian 特异的读心或
+        线上报警器。固定标量
+        评分器最终可以精确融合回 raw hidden direction，无需运行时 full J。
       </p>
     </div>
 
@@ -978,6 +1106,9 @@ function render(findings, traces) {
   const paired256 = findings.paired_timeline.find((row) => row.offset === 256);
   const absolute256 = findings.absolute_timeline.find((row) => row.offset === 256);
   const random256 = findings.random_alignment.find((row) => row.offset === 256);
+  const finalExplore = findings.exploration_v2 || {};
+  const finalGate = finalExplore.prospective_low_fpr_gate || {};
+  const finalCoding = finalExplore.coding_selector_prospective || {};
 
   app.innerHTML = `
     <main>
@@ -992,23 +1123,23 @@ function render(findings, traces) {
           <p class="eyebrow">STRICT EXACT-PREFIX · UPDATED 2026-07-31</p>
           <h1>J-space 还不能告诉我们<br><em>“这条轨迹从此刻开始错了”</em></h1>
           <p class="hero-lead">
-            但探索已经找到更窄、可检验的用途：输入是否足以回答可以跨新题族
-            读出；coding 中只留下局部 sibling-ranking 候选。不同风险方向不能
-            通用迁移，几个可读关键词也不是完整思维。
+            模型内部确实能读出“输入是否足够”等任务特定风险，但独立验证显示：
+            旧域阈值在新问题上误拦一半完整输入，20 道新 coding 题上的 J
+            selector 也没有胜过 raw 或随机。几个可读关键词更不是完整思维。
           </p>
           <div class="hero-actions"><a class="primary-button" href="#answer">先看三个答案 ↓</a><a class="secondary-button" href="#problems">直接看 10 道原题</a></div>
         </div>
         <aside class="hero-verdict">
           <span>当前最诚实的结论</span>
-          <strong>相对排序：有候选信号</strong>
-          <strong class="negative">绝对报警：没有证据</strong>
+          <strong>任务特定表征：确实存在</strong>
+          <strong class="negative">J 特异控制 / 部署：没有成立</strong>
           <dl>
-            <div><dt>t=256 配对 Brier</dt><dd>${fmt(paired256?.J.brier)}</dd></div>
-            <div><dt>J / raw 配对准确率</dt><dd>${pct(paired256?.J.accuracy)} / ${pct(paired256?.raw.accuracy)}</dd></div>
-            <div><dt>单轨 J Brier / prior</dt><dd>${fmt(absolute256?.J_brier)} / ${fmt(absolute256?.prior_brier)}</dd></div>
-            <div><dt>保谱随机方向检验</dt><dd>p=${fmt(random256?.rank_p, 4)}</dd></div>
+            <div><dt>新域 gate 完整题误拦</dt><dd>${pct(finalGate.primary?.J?.false_positive_rate)}</dd></div>
+            <div><dt>coding top‑4 · J / raw / random</dt><dd>${pct(finalCoding.selected_pass?.J?.top4)} / ${pct(finalCoding.selected_pass?.raw?.top4)} / ${pct(finalCoding.selected_pass?.random?.top4)}</dd></div>
+            <div><dt>OOD official JQ rank</dt><dd>${finalExplore.ood_random_alignment_control?.official_rank?.brier?.official_best_first_rank_among_257}/257</dd></div>
+            <div><dt>coding 开发集保谱随机 p</dt><dd>p=${fmt(random256?.rank_p, 4)}</dd></div>
           </dl>
-          <p>所有主要预测结果均为 whole-task leave-one-task-out；只有 6 个混合正误任务。</p>
+          <p>新结论分别来自 256 个同谱随机对照、16 个新 answerability family 和 20×8 条新 coding 轨迹。</p>
         </aside>
       </section>
 
@@ -1024,7 +1155,7 @@ function render(findings, traces) {
         <div class="answer-grid">
           ${answerCard("A", "能看到模型具体在想什么吗？", "不能；Top-K 词只是投影摘要", "negative", "J@h 是 2560 维向量。报告展示的几个词只是用 unembedding 把这个向量词汇化，不等于完整思维内容。固定多词概念轴比散乱关键词更有用，但仍只是一个可解释 measurement。")}
           ${answerCard("B", "能定位单条轨迹何时开始错吗？", "当前不能；没有稳定、单调的 onset", "negative", "单轨绝对风险的 J Brier 没有超过 task-agnostic prior；同一个读出跨时间共享时，256 token 的优势也明显衰减。所谓 J Δ、范数、速度等简单标量均未通过 familywise 置换检验。")}
-          ${answerCard("C", "那 J-space 有什么可用价值？", "任务特定风险头与几何先验", "positive", "当前最强结果是跨新题族读取“输入是否足够”；coding 里则只有同题多分支排序候选。二者都能融合成 raw hidden direction。下一步是实际 gate 干预和按风险类型、生成阶段分别验证。")}
+          ${answerCard("C", "那 J-space 有什么可用价值？", "任务特定风险表征与几何先验", "positive", "它适合用来研究 residual 中哪些风险可解码，以及 Jacobian 谱如何充当有限样本 metric prior；但当前低误报 gate 和 coding selector 都已停止。若继续，应做目标域校准、多风险专用头和 official J 对随机 JQ/raw/logit 的训练期对照。")}
         </div>
         <div class="relation-map">
           <div><span>同一道题</span><b>1 个 prompt</b></div><i>→</i>
@@ -1033,7 +1164,7 @@ function render(findings, traces) {
           <div class="focus"><span>J-space</span><b>J<sub>ℓ</sub>h<sub>ℓ</sub></b></div><i>→</i>
           <div><span>相对排序</span><b>继续 Top-1/2</b></div>
         </div>
-        <p class="relation-note">这里的关系不是“J-space 发现某个关键词 → 宣判错误”，而是训练一个只在同题兄弟分支间比较的 held-out-task ranker。若只生成一条轨迹，就没有当前证据支持报警。</p>
+        <p class="relation-note">这里的关系不是“J-space 发现某个关键词 → 宣判错误”，而是训练一个只在同题兄弟分支间比较的 held-out-task ranker；这个开发集候选随后在 20 道新题上没有胜过 raw 或随机。若只生成一条轨迹，更没有当前证据支持报警。</p>
       </section>
 
       <section class="content-section section-tinted" id="evidence">
@@ -1104,18 +1235,18 @@ function render(findings, traces) {
       </section>
 
       <section class="content-section" id="explore">
-        ${sectionTitle("03", "DIVERGENT EXPLORATION · ROUND 2", "把几个关键词之外的方向都试一遍，真正留下什么？", "以下 9 项都从实验 artifact 自动抽取。重点不是再制造一个好看的分数，而是区分机制、混淆、跨时间泛化、无标签选择、部署成本和真实 retry 效果。")}
+        ${sectionTitle("03", "DIVERGENT EXPLORATION · ROUND 2", "把几个关键词之外的方向都试一遍，真正留下什么？", "以下 22 项都从实验 artifact 自动抽取。重点不是再制造一个好看的分数，而是区分机制、混淆、跨时间泛化、无标签选择、部署成本和真实 retry 效果。")}
         ${explorationPanel(findings.exploration_v2)}
       </section>
 
       <section class="content-section" id="retry">
-        ${sectionTitle("04", "从分析走向行动", "如果要利用它重试，正确的系统形态是什么？", "当前证据支持“先并行、后相对筛选”的实验，不支持监控单条输出并在某个 J Δ 阈值处打断。")}
+        ${sectionTitle("04", "从分析走向行动", "为什么当前不该让 J-space 自动重试？", "开发集上的“先并行、后相对筛选”候选已经完成 20 道新题验证，J 没有胜过 raw 或随机；单条输出的 J Δ 报警同样没有证据。")}
         ${selectionPanel(findings.selection)}
         <div class="retry-design">
-          <article><span>01 · FAN OUT</span><h3>同题生成 4–8 条前缀</h3><p>用匹配采样预算生成到冻结的 t=256；不看未来代码，不动态挑时间点。</p></article>
-          <article><span>02 · SCORE</span><h3>固定 L24 / t256 读出</h3><p>先在开发集冻结 J ranker，同时保留 raw h、logit、随机选择三组基线。</p></article>
-          <article><span>03 · PRUNE</span><h3>只继续 Top-1 或 Top-2</h3><p>评估最终 pass@selected、节省 token、误杀本来会成功分支的概率。</p></article>
-          <article><span>04 · PROSPECTIVE</span><h3>只在全新题上报一次</h3><p>至少 100 个混合正误任务；不能再按结果挑 layer、checkpoint 或 concept。</p></article>
+          <article><span>01 · POOL</span><h3>先问候选池有没有正确答案</h3><p>新面板 8/20 题八条全错；排序器无法创造不存在的正确分支，answerability 与排序必须拆开。</p></article>
+          <article><span>02 · VERIFY</span><h3>重试需要外部确定性判定</h3><p>单元测试、schema、类型和入口契约能决定何时停止；J 只提供排序分数，自己看不到 pass 标签。</p></article>
+          <article><span>03 · BASELINE</span><h3>raw / logit 必须优先比较</h3><p>新题 top‑1 是 logit 45%、J 35%；任何新选择器都必须先超过简单特征和随机排序。</p></article>
+          <article><span>04 · REOPEN</span><h3>只有新机制证据才重启 J 路线</h3><p>先证明 official J 在独立面板稳定胜过同谱随机 JQ，并改善真实 pass/cost，而不只是一个 Brier 分数。</p></article>
         </div>
         ${steeringPanel(findings.steering)}
       </section>
