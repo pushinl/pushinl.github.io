@@ -1,0 +1,421 @@
+{
+  "schema_version": 1,
+  "as_of": "2026-08-01",
+  "model": "Qwen3.5-4B",
+  "scope": "non-coding J-space / Jacobian evidence",
+  "headline": "最强证据不是‘读心’，而是定位任务正在使用的语义对象与证据依赖。",
+  "summary": "固定平均 J 与 prompt-local Jacobian 是两种不同测量。前者能表示任务焦点和部分实体型隐变量；后者最适合定位证据依赖。新的前瞻结果还显示，使用真实反事实零点和全序列状态时可精确恢复 signed effect，但代价是每个来源额外 forward。它们都没有形成跨任务通用的正确性、早期失败预警或口头自省能力。",
+  "objects": [
+    {
+      "id": "average_fixed_j",
+      "short_name": "average fixed J",
+      "zh_name": "固定平均 J",
+      "definition": "在 1,000 个 WikiText prompts 上拟合、推理时固定的层间线性算子；网页中的 official J 指 J @ h。",
+      "best_supported_use": "读取任务当前选择的主题/实体，并对已验证的实体型隐变量做局部交换。",
+      "required_controls": "raw residual / raw logit lens，以及保持奇异谱但打乱输入方向的 JQ。"
+    },
+    {
+      "id": "local_jacobian",
+      "short_name": "local Jacobian",
+      "zh_name": "prompt-local Jacobian",
+      "definition": "针对当前 prompt 与当前输出 margin 做真实反向传播得到的局部导数；不是固定平均 J。",
+      "best_supported_use": "把输出依赖聚合到证据 span 或对话 turn，再用删除/替换干预确认。",
+      "required_controls": "attention、raw norm、固定平均 J，以及逐行/逐 turn 的因果干预。"
+    },
+    {
+      "id": "raw_and_jq",
+      "short_name": "raw / JQ controls",
+      "zh_name": "raw / 同谱 JQ 对照",
+      "definition": "raw 检查效果是否已存在于 residual；JQ 保留 J 的奇异谱但打乱方向，用来检查 official 方向是否特殊。",
+      "best_supported_use": "作为必要对照，不是一个新的解释层。",
+      "required_controls": "所有 ‘J-specific’ 主张必须同时报告 raw 与 JQ。"
+    },
+    {
+      "id": "behavior_and_policy",
+      "short_name": "behavior / policy",
+      "zh_name": "行为训练与动作策略",
+      "definition": "把内部或外部信号真正连接到澄清、检索、重试或训练目标，再评估最终行为效用；它不是一种 J 表征。",
+      "best_supported_use": "检验一个可解码信号是否能改善真实动作，而不只是在离线 AUC 上好看。",
+      "required_controls": "base、never/always、raw/logit、直接行为 SFT、generic reflection，以及解盲前锁定的语义审计。"
+    }
+  ],
+  "positive_findings": [
+    {
+      "id": "topic_selection",
+      "object": "average_fixed_j",
+      "label": "前瞻复制 · 胜已测 JQ",
+      "title": "固定平均 J 会跟随任务选择的主题",
+      "summary": "在 10 个未见日常主题、4 个新 carrier 和新措辞上冻结层带 [22, 24, 26]。focus−control 的 official J target macro 为 8.231，10/10 主题为正。",
+      "metrics": [
+        {"label": "official J macro", "value": "8.231", "note": "bootstrap 95% CI [6.695, 9.925]"},
+        {"label": "official J − raw", "value": "+4.632", "note": "10/10 主题为正"},
+        {"label": "同谱 JQ", "value": "超过 16/16", "note": "JQ mean 0.130，max 0.470"}
+      ],
+      "boundary": "这支持 task-selected semantic object，并超过本实验测试的 16 个 JQ；有限随机对照不等于对所有同谱变换的普遍 J-specific 证明。不表示所有隐式计算都会进入同一空间，算术 covert task 在同一初筛中没有稳定通过。",
+      "provenance": [
+        "docs/semantic_workspace_functional_findings_v1_zh.md §2",
+        "artifacts/qwen3_5_4b/workspace_topic_modulation_replication_v1/topic_replication_report.json"
+      ]
+    },
+    {
+      "id": "latent_entity_swap",
+      "object": "average_fixed_j",
+      "label": "最强因果证据",
+      "title": "提示中没写出的中间实体，也能被局部交换",
+      "summary": "前瞻 landmark→country→property 复制中，23 个严格主样本的 source country、target country 与两边答案字符串都不在 prompt。交换固定平均 J 坐标后，目标答案排名显著上升。",
+      "metrics": [
+        {"label": "目标答案 RR", "value": "0.083 → 0.565", "note": "unpatched → official J"},
+        {"label": "J − raw RR", "value": "+0.400", "note": "95% CI [+0.254, +0.546]"},
+        {"label": "全词表 target top‑1", "value": "11/23", "note": "raw 0/23；8 个 JQ 全为 0/23"}
+      ],
+      "boundary": "alpha=1 时 target 实体直接复制为 0/23，但证据主要来自 country；不能外推到所有概念、抽象状态或通用行为控制。",
+      "provenance": [
+        "docs/semantic_workspace_functional_findings_v1_zh.md §4.2",
+        "artifacts/qwen3_5_4b/workspace_latent_probe_swap_replication_v1/latent_probe_swap_report.json"
+      ]
+    },
+    {
+      "id": "rag_causal_attribution",
+      "object": "local_jacobian",
+      "label": "机制定位阳性 · 主终点 STOP",
+      "title": "local Jacobian 找到真正决定答案的 RAG 行",
+      "summary": "12 个新事实家族、36 个 supported prompts 中，逐行把 key 替换为无关 key 来建立因果真值：gold 行中和后的 margin drop 在 36/36 中最大，并令模型转答 unknown。",
+      "metrics": [
+        {"label": "local gradient top‑1", "value": "36/36", "note": "与真实因果 top‑1 一致"},
+        {"label": "目标行 pooled AUC", "value": "0.996", "note": "attention 0.534；fixed J 0.772；raw norm 0.542"},
+        {"label": "平均 Spearman", "value": "0.393", "note": "冻结门槛 0.400，差 0.0069，严格记 STOP"}
+      ],
+      "boundary": "它非常擅长找唯一决定性行，但未通过精排所有近零 distractor 效应的冻结主终点；因果验证的 36/36 supported prompts 基线输出正确，不是失败预测实验。",
+      "provenance": [
+        "docs/jacobian_dynamics_noncode_findings_v1.md §3.2",
+        "artifacts/qwen3_5_4b/local_jacobian_rag_causal_validation_v1/report.json"
+      ]
+    },
+    {
+      "id": "memory_attribution",
+      "object": "local_jacobian",
+      "label": "机制归因通过",
+      "title": "多轮记忆中，可定位真正有因果影响的 turn",
+      "summary": "96 个十轮对话逐 turn 替换后，authoritative turn 在 96/96 中正向支持 gold margin；绝对最大因果 turn 在 96/96 中都属于目标相关记忆。",
+      "metrics": [
+        {"label": "L8 relevant-turn AUC", "value": "0.864", "note": "因果 top‑1 一致率 0.719"},
+        {"label": "L24 relevant-turn AUC", "value": "0.986", "note": "深层 attention 也很强：0.951"},
+        {"label": "行为准确率", "value": "94/96", "note": "仅 2 个错误，不足以评估错误诊断"}
+      ],
+      "boundary": "冻结结论是 MECHANISTIC_MEMORY_ATTRIBUTION_ONLY；不能声称 local Jacobian 是最佳错误检测器，深层 attention 与普通低 logit confidence 仍是强基线。",
+      "provenance": [
+        "docs/jacobian_dynamics_noncode_findings_v1.md §5",
+        "artifacts/qwen3_5_4b/local_jacobian_multiturn_memory_v1/report.json"
+      ]
+    },
+    {
+      "id": "conflict_dependency",
+      "object": "local_jacobian",
+      "label": "两套前瞻复制 · 定位通过",
+      "title": "早层无符号梯度稳定找到最有影响的冲突来源",
+      "summary": "在两套各含 12 个全新 family、144 个 prompt 和 1,152 个严格 token/offset 对齐干预的复制中，层 8 local gradient 都稳定定位绝对因果影响最大的两行。",
+      "metrics": [
+        {
+          "label": "v2 L8 因果 top‑2",
+          "value": "0.879",
+          "note": "95% CI [0.848,0.911]；matched L7 attention 0.166；deep L23 attention 0.848"
+        },
+        {
+          "label": "v3 L8 因果 top‑2",
+          "value": "0.877",
+          "note": "95% CI [0.839,0.914]；L7 attention 0.211；deep L23 attention 0.744"
+        },
+        {
+          "label": "v3 行内答案词",
+          "value": "0",
+          "note": "候选行只含 marker，必须通过独立 legend 做一跳映射"
+        }
+      ],
+      "boundary": "成立的是影响大小定位，不是支持/反对方向。v2 的 visible entity parser 定位为 0.921；v3 的 marker→legend parser 也几乎完全解决相对来源排序，因此结构化来源明确时应优先使用 parser。",
+      "provenance": [
+        "docs/local_jacobian_conflict_attribution_replication_v2_protocol.md",
+        "artifacts/qwen3_5_4b/local_jacobian_conflict_attribution_replication_v2/report.json",
+        "docs/local_jacobian_conflict_relative_gauge_v3_protocol.md",
+        "artifacts/qwen3_5_4b/local_jacobian_conflict_relative_gauge_v3/report.json"
+      ]
+    },
+    {
+      "id": "answerability_action_routing",
+      "object": "behavior_and_policy",
+      "label": "动作效用阳性 · 非 J-specific",
+      "title": "任务特定的信息充分性信号可以触发澄清",
+      "summary": "固定 external panel 中，J/raw/logit 的 complete false positive 都为 3/32，insufficient true positive 为 23/25/25。事后确定性 policy join 将 balanced utility 从 never 的 66.8% 提高到 79.3%/82.4%/82.4%。",
+      "metrics": [
+        {
+          "label": "J balanced",
+          "value": "79.3%",
+          "note": "never 66.8%"
+        },
+        {
+          "label": "raw / logit",
+          "value": "82.4%",
+          "note": "两者均高于 J"
+        },
+        {
+          "label": "complete 正确率代价",
+          "value": "96.1% → 86.7%",
+          "note": "三种 gate 相同"
+        }
+      ],
+      "boundary": "3/32 false positive 的单侧 95% 上界仍为 22.5%，低误报证据未通过；policy join 是事后联结。成立的是任务特定 action routing，不是通用 confidence 或 J 独有能力。",
+      "provenance": [
+        "docs/final_jspace_exploration_conclusions_v2.md",
+        "artifacts/qwen3_5_4b/risk_policy_external_gate_v2/report.json",
+        "artifacts/qwen3_5_4b/risk_policy_external_gate_v2/downstream_policy_join/report.json"
+      ]
+    },
+    {
+      "id": "counterfactual_causal_transport",
+      "object": "local_jacobian",
+      "label": "全新前瞻复制 · 强阳性",
+      "title": "用真实反事实作零点后，深层全序列 local Taylor 项能恢复因果方向",
+      "summary": "在 10 个全新 family、80 个 prompt 和 640 个等 token/offset entity replacements 上，L24 base gradient 点乘全序列 hidden difference，准确复现每行替换对输出 margin 的方向和相对次序。",
+      "metrics": [
+        {
+          "label": "候选 pairwise / sign",
+          "value": "1.000 / 1.000",
+          "note": "40/40 两来源顺序；80/80 单行符号；family CI 均 [1,1]"
+        },
+        {
+          "label": "八行 signed Spearman",
+          "value": "0.942",
+          "note": "95% CI [0.933,0.952]；pooled Pearson 0.955"
+        },
+        {
+          "label": "只算原 source span",
+          "value": "0.400 / 0.475",
+          "note": "pairwise / sign；signed Spearman −0.045"
+        }
+      ],
+      "boundary": "确认的是高成本 matched-counterfactual Taylor approximation：每个候选来源都要额外 forward，且显式 codebook/parser 的 pairwise/sign 同样为 1.0/1.0。独立 E3 量级审计中，原 row-span contribution 绝对值总和仅为 full-sequence 的 0.72%。它说明影响在深层已迁移到全序列 task state，不是廉价预警、truth detector 或原 source span 的局部解释。",
+      "provenance": [
+        "docs/local_jacobian_counterfactual_baseline_replication_v1_protocol.md",
+        "docs/local_jacobian_counterfactual_baseline_replication_v1_findings_zh.md",
+        "artifacts/qwen3_5_4b/local_jacobian_counterfactual_baseline_replication_v1/report.json",
+        "artifacts/qwen3_5_4b/local_jacobian_counterfactual_baseline_replication_v1/audit_report.json"
+      ]
+    },
+    {
+      "id": "layerwise_causal_transport_atlas",
+      "object": "local_jacobian",
+      "label": "跨三域描述图谱 · E3",
+      "title": "反事实 Taylor 归因会随层向 prompt 下游状态重分布",
+      "summary": "36 个 base prompts、84 个严格对齐干预中，RAG、冲突和指令来源三域都通过冻结的 L4→L28 描述性 migration rule；这提供了比单点 Top‑K 词更完整的 layer×partition 视图。",
+      "metrics": [
+        {
+          "label": "source share L4→L28",
+          "value": "0.424→0.003",
+          "note": "RAG；conflict 0.335→0.005；instruction 0.491→0.084；三域变化 CI 均低于 0"
+        },
+        {
+          "label": "L28 full / source ρ",
+          "value": "0.804 / 0.469",
+          "note": "RAG；conflict 0.975/−0.152；instruction 0.935/0.067"
+        },
+        {
+          "label": "首次 downstream>source",
+          "value": "L8 / ≤L4 / L8",
+          "note": "RAG / conflict / instruction；按 12-family bootstrap CI 下界判定"
+        }
+      ],
+      "boundary": "所有被索引的位置都在 base prompt 内；last prompt token 与 other_downstream 是生成前的 prompt state，不是已生成 output token。它是受控小面板上的 E3 层快照，与影响向下游 task state 迁移的解释相容，但不直接追踪守恒信息包。83 条 effect 取旧 sealed truth、Cedar 1 条取同次 forward；BF16 replay 最大漂移 0.5，因此不能升级为确认性泛化、truth signal 或在线 gate。",
+      "provenance": [
+        "docs/causal_transport_atlas_v1_3_findings_zh.md",
+        "docs/causal_transport_atlas_v1_3_protocol_supersession_note.md",
+        "docs/causal_transport_atlas_v1_3_audit_zh.md",
+        "artifacts/qwen3_5_4b/causal_transport_atlas_v1_3/report.json"
+      ]
+    }
+  ],
+  "negative_findings": [
+    {
+      "id": "no_universal_confidence",
+      "object": "average_fixed_j",
+      "label": "未成立",
+      "title": "没有跨风险通用的固定 J 置信轴",
+      "summary": "六类风险的同模板 confirmation 上 fixed J macro AUC 0.807，但 raw 为 0.853；16 个同谱 JQ 均值 0.840，9/16 不差于 official J。leave-one-scenario-out 的 official J macro AUC 降至 0.267。",
+      "boundary": "curvature 独立复制和场景条件 probe 也未通过；不能把同模板分离称为 J-specific wrongness。",
+      "provenance": [
+        "docs/jacobian_dynamics_noncode_findings_v1.md §1",
+        "artifacts/qwen3_5_4b/jacobian_geometry_crossdomain_v1/report.json",
+        "artifacts/qwen3_5_4b/jacobian_curvature_replication_v1/report.json"
+      ]
+    },
+    {
+      "id": "no_local_confidence",
+      "object": "local_jacobian",
+      "label": "复制失败",
+      "title": "local Jacobian 也不是通用错误计",
+      "summary": "探索阶段 source-end energy fraction 的 pair accuracy 曾为 0.833；独立 60-pair panel 仅 AUC 0.528、pair accuracy 0.633，绝对 gate balanced accuracy 0.540、FPR 0.620。",
+      "boundary": "方向在 evidence conflict / tool failure 与 correction conflict / semantic OOD 之间翻转；任务语义决定特征方向。",
+      "provenance": [
+        "docs/jacobian_dynamics_noncode_findings_v1.md §2",
+        "artifacts/qwen3_5_4b/local_jacobian_source_energy_replication_v1/report.json"
+      ]
+    },
+    {
+      "id": "no_introspection",
+      "object": "average_fixed_j",
+      "label": "未通过",
+      "title": "模型不能可靠口头报告被注入的概念",
+      "summary": "12 个冻结概念中，strength=0.25 时 official J 让 12/12 target RR 上升，但仍是 0/12 top‑1；raw 方向的 report gain 更大。strength=1 时 J gain 近 0，剂量曲线不单调。",
+      "boundary": "外部 probe/patch 能访问变量，不等于模型拥有可靠 introspection；official J 未超过 raw、random 或 wrong-concept controls。",
+      "provenance": [
+        "docs/semantic_workspace_functional_findings_v1_zh.md §7",
+        "artifacts/qwen3_5_4b/workspace_verbal_introspection_v1/verbal_introspection_report.json"
+      ]
+    },
+    {
+      "id": "topk_not_thought",
+      "object": "average_fixed_j",
+      "label": "解释边界",
+      "title": "Top‑K 词不是完整思维，也不是因果重要性的量尺",
+      "summary": "23 个已知有因果意义的 country 隐变量中，official J 只在 9/23 进入 Top‑5；可见度与 causal RR gain 的 Spearman 仅 0.161。",
+      "boundary": "工具应展示全排名、层位、反事实影响与来源，而不是把几个关键词拼成自然语言 CoT。",
+      "provenance": [
+        "docs/semantic_workspace_functional_findings_v1_zh.md §6",
+        "artifacts/qwen3_5_4b/workspace_latent_visibility_audit_v1/visibility_report.json"
+      ]
+    },
+    {
+      "id": "no_early_branch_alarm",
+      "object": "local_jacobian",
+      "label": "冻结盲测未通过",
+      "title": "分支排序信号没有变成可靠的提前重试门",
+      "summary": "同提示不同采样分支在 H8 上仍有约 0.78 的 pre-ACTION AUC，但冻结低误报阈值提前抓到 0/84；H16 且至少提前 4 token 时，raw/J 只抓到 9/84 与 6/84。后验强文本对照中，H16 rawΔ 的 AUC 增量为 +0.154，95% CI [+0.041,+0.261]。",
+      "boundary": "较长 horizon 可能含有超出浅层 n‑gram 的语义/决策阶段信息，但尚未转化为合格门控；J−raw 的 family-bootstrap 区间跨 0，没有 J-specific 优势。",
+      "provenance": [
+        "docs/temporal_horizon_survival_v3_protocol.md",
+        "artifacts/qwen3_5_4b/temporal_horizon_survival_v3/report.json"
+      ]
+    },
+    {
+      "id": "no_signed_conflict_direction",
+      "object": "local_jacobian",
+      "label": "严格复制未通过",
+      "title": "signed g·h 不能可靠判断一条证据支持哪一边",
+      "summary": "v2 虽有 0.944 的显式 A/B 双极冲突 AUC，但逐行因果符号准确率只有 0.595。把答案词从证据行移除后，v3 预注册的两行相对顺序准确率降至 0.438。",
+      "metrics": [
+        {
+          "label": "v3 local-J 相对顺序",
+          "value": "0.438",
+          "note": "95% CI [0.326,0.549]"
+        },
+        {
+          "label": "v3 raw / fixed J",
+          "value": "0.465 / 0.410",
+          "note": "local-J − raw = −0.028；CI [−0.167,+0.097]"
+        },
+        {
+          "label": "结构化 parser",
+          "value": "0.993",
+          "note": "71.5/72；唯一 0.5 为因果真值 tie"
+        }
+      ],
+      "boundary": "v2 的后验 72/72 相对轴没有在全新间接语义面板复制。可以用 local gradient 找‘哪里重要’，不能从 signed g·h 的绝对或相对正负断言‘这行支持/反对答案’。",
+      "provenance": [
+        "docs/local_jacobian_conflict_attribution_replication_v2_findings_zh.md",
+        "docs/local_jacobian_conflict_relative_gauge_v3_protocol.md",
+        "artifacts/qwen3_5_4b/local_jacobian_conflict_relative_gauge_v3/report.json"
+      ]
+    },
+    {
+      "id": "no_instruction_violation_gate",
+      "object": "local_jacobian",
+      "label": "前瞻面板未通过",
+      "title": "J 没有可靠预警日常对话里的指令层级违规",
+      "summary": "在 144 个 system/user/document 来源面板中，66 个有效竞争输出含 20 次违规与 46 次抵抗；L24 local-J 的违规 AUC 仅 0.596，冻结 local-J gate 只告警一次且没有命中违规。",
+      "metrics": [
+        {
+          "label": "J / raw / surface AUC",
+          "value": "0.596 / 0.604 / 0.625",
+          "note": "average-J 0.610；single-token final-logit ceiling 1.000"
+        },
+        {
+          "label": "L8 来源 top‑2",
+          "value": "0.554",
+          "note": "95% CI [0.515,0.595]；冻结门槛 0.65；deep attention 0.550"
+        },
+        {
+          "label": "真正配对诱发 / 修复",
+          "value": "6 / 4",
+          "note": "净违规率 +2.8pp，95% CI [−6.9,+11.1]"
+        }
+      ],
+      "boundary": "竞争条件中的错误不都由注入诱发。AUC 的 20/66 来自 valid-output cohort；action 审计中的 rescue 4/22、damage 4/50 来自另一 candidate-level cohort，二者不能混作同一分母。E3 secondary 显示 L24 全序列 g·Δh 与真实来源效应的题内 Spearman 为 0.893，而原 source span 为 −0.083；这提示影响迁移到后续状态，但每来源需要额外反事实 forward，不能当在线预警。",
+      "provenance": [
+        "docs/local_jacobian_instruction_provenance_protocol_v1.md",
+        "docs/local_jacobian_instruction_provenance_findings_zh_v1.md",
+        "artifacts/qwen3_5_4b/local_jacobian_instruction_provenance_v1/report.json"
+      ]
+    },
+    {
+      "id": "no_pressure_counterbelief_detector",
+      "object": "average_fixed_j",
+      "label": "支持性新面板 · E2 / STOP",
+      "title": "模型会迎合用户压力，但 fixed J 没有暴露可靠 counter-belief",
+      "summary": "24 个新客观事实中，中性条件 24/24 正确；authority/direct pressure 后 44/48 翻成错误答案。在这 44 次真实翻转中，L24 official-J 仍偏向正确答案的比例只有 25.0%。",
+      "metrics": [
+        {
+          "label": "official J / raw retention",
+          "value": "25.0% / 15.9%",
+          "note": "J−raw +9.1pp；95% CI [−2.2,+22.0]"
+        },
+        {
+          "label": "16 个同谱 JQ",
+          "value": "16/16 ≥ official",
+          "note": "mean 43.6%，range 29.5%–50.0%；rank p=1.0"
+        },
+        {
+          "label": "全压力 flip AUC",
+          "value": "J 0.338",
+          "note": "raw 0.705；visible template 0.773"
+        }
+      ],
+      "boundary": "已知正确标签与 neutral 对照后，沿 official-J 轴定向 patch 的 margin gain 为 +0.909（raw +0.605），但只恢复 4/44，且不是模型自行识别。它支持一个很窄的 steering 轴，不支持‘模型知道自己正在迎合’或在线 detector。",
+      "provenance": [
+        "docs/belief_pressure_counterbelief_protocol_v1.md",
+        "docs/belief_pressure_counterbelief_findings_v1_zh.md",
+        "artifacts/qwen3_5_4b/belief_pressure_counterbelief_v1/report.json"
+      ]
+    },
+    {
+      "id": "reflection_training_no_gain",
+      "object": "behavior_and_policy",
+      "label": "训练盲审未通过",
+      "title": "反思式训练没有学出可靠的‘及时承认不知道’",
+      "summary": "160 条独立盲审先锁定标签再解盲。final counterfactual reflection 的 missing-info 语义合适率为 62.5%，base 为 68.8%；patched overall risk-action 差 −10.9pp。",
+      "boundary": "冻结 parser 严重误读否定与澄清：semantic appropriate 51.9%，parser 仅 31.2%，77/160 至少一项不一致。首先需要修复语义 evaluator，不能把 parser 分数当作自知能力。",
+      "provenance": [
+        "artifacts/qwen3_5_4b/counterfactual_reflection_v1/evaluation/missing_info_blind_audit_v1/findings_blind_audit_zh.md",
+        "artifacts/qwen3_5_4b/counterfactual_reflection_v1/evaluation/missing_info_blind_audit_v1/report.json"
+      ]
+    }
+  ],
+  "recommended_system_shape": [
+    "围绕业务关心的 top‑1 vs runner‑up 或 action margin 计算 prompt-local VJP。",
+    "把梯度能量聚合到 retrieval chunk、工具结果、对话 turn 或用户更正。",
+    "对最高影响单元做删除/替换 forward，确认它确实改变答案。",
+    "若要离线解释 signed effect，用同一替换 forward 的全序列 g·Δh；不把它包装成低成本 gate。",
+    "机制可视化优先画 layer×prompt-partition 的 |g·Δh| heatmap；把最后 prompt token 与生成前后缀明确标成 prompt state，不画成已生成 token 轨迹。",
+    "只有当该因果依赖过期、冲突、缺失或低可信时，才触发检索、澄清或重试。",
+    "只把无符号梯度能量用于候选来源定位；signed g·h 的方向在间接语义盲测中失败，不接入支持/反对裁决。"
+  ],
+  "source_documents": [
+    "docs/semantic_workspace_functional_findings_v1_zh.md",
+    "docs/jacobian_dynamics_noncode_findings_v1.md",
+    "docs/local_jacobian_counterfactual_baseline_replication_v1_findings_zh.md",
+    "docs/local_jacobian_instruction_provenance_findings_zh_v1.md",
+    "docs/belief_pressure_counterbelief_findings_v1_zh.md",
+    "docs/causal_transport_atlas_v1_3_findings_zh.md",
+    "docs/causal_transport_atlas_v1_3_protocol_supersession_note.md",
+    "docs/causal_transport_atlas_v1_3_audit_zh.md",
+    "docs/final_jspace_exploration_conclusions_v3.md",
+    "docs/final_evidence_audit_v4.md"
+  ]
+}

@@ -1,0 +1,1356 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-01T00:00:00+08:00",
+  "evidence_level": "E3 · 描述性图谱",
+  "title": "因果影响不是停在来源词上，而会沿层运输到下游位置",
+  "summary": "对 36 个 base prompts 的 84 次严格等长干预，逐层计算完整序列的 g·Δh。三类任务都满足预先冻结的 L4→L28 迁移规则；这里展示的是干预影响的运输，不是思维字幕、正确性或置信度。",
+  "sample_summary": [
+    {
+      "label": "base prompts",
+      "value": "36"
+    },
+    {
+      "label": "严格干预",
+      "value": "84"
+    },
+    {
+      "label": "固定层",
+      "value": "7"
+    },
+    {
+      "label": "每域 family",
+      "value": "12"
+    }
+  ],
+  "domains": [
+    {
+      "id": "rag",
+      "label": "RAG",
+      "subtitle": "证据 key 中和",
+      "description": "support_middle 中和目标证据行的 key；margin 为 expected − unknown。",
+      "prompt_count": 12,
+      "intervention_count": 12,
+      "family_count": 12,
+      "result_label": "MIGRATION_SUPPORTED_E3 · L8",
+      "interpretation": "冻结规则通过：source share L4 0.424 → L28 0.003；downstream share 0.576 → 0.997。这说明有限干预的影响位置发生迁移，不代表模型判断了真伪。",
+      "migration": {
+        "decision": "MIGRATION_SUPPORTED_E3",
+        "downstream_share_L28_minus_L4": {
+          "family_bootstrap_95_ci": [
+            0.3374742025887126,
+            0.5042033657396773
+          ],
+          "family_macro_mean": 0.4209118378084431
+        },
+        "source_share_L28_minus_L4": {
+          "family_bootstrap_95_ci": [
+            -0.5066942733937818,
+            -0.33900074701294003
+          ],
+          "family_macro_mean": -0.4209118401428225
+        },
+        "transition_layer": "L8"
+      }
+    },
+    {
+      "id": "conflict_v3",
+      "label": "Conflict",
+      "subtitle": "候选实体剥离",
+      "description": "shipping_dispatch / competing；分别剥离两条候选来源；margin 为 A − B。",
+      "prompt_count": 12,
+      "intervention_count": 24,
+      "family_count": 12,
+      "result_label": "MIGRATION_SUPPORTED_E3 · at_or_before_L4",
+      "interpretation": "冻结规则通过：source share L4 0.335 → L28 0.005；downstream share 0.665 → 0.995。这说明有限干预的影响位置发生迁移，不代表模型判断了真伪。",
+      "migration": {
+        "decision": "MIGRATION_SUPPORTED_E3",
+        "downstream_share_L28_minus_L4": {
+          "family_bootstrap_95_ci": [
+            0.28735719701418505,
+            0.3714216674387795
+          ],
+          "family_macro_mean": 0.32973287560443837
+        },
+        "source_share_L28_minus_L4": {
+          "family_bootstrap_95_ci": [
+            -0.37116958413345374,
+            -0.286850702707124
+          ],
+          "family_macro_mean": -0.3297328734539156
+        },
+        "transition_layer": "at_or_before_L4"
+      }
+    },
+    {
+      "id": "instruction_provenance",
+      "label": "Instruction",
+      "subtitle": "指令来源剥离",
+      "description": "document_then_recompute / competing；四类来源逐条剥离；margin 为 violation − authorized。",
+      "prompt_count": 12,
+      "intervention_count": 48,
+      "family_count": 12,
+      "result_label": "MIGRATION_SUPPORTED_E3 · L8",
+      "interpretation": "冻结规则通过：source share L4 0.491 → L28 0.084；downstream share 0.509 → 0.916。这说明有限干预的影响位置发生迁移，不代表模型判断了真伪。",
+      "migration": {
+        "decision": "MIGRATION_SUPPORTED_E3",
+        "downstream_share_L28_minus_L4": {
+          "family_bootstrap_95_ci": [
+            0.37048575854485943,
+            0.4392635337540379
+          ],
+          "family_macro_mean": 0.4064873041238874
+        },
+        "source_share_L28_minus_L4": {
+          "family_bootstrap_95_ci": [
+            -0.43861578137023205,
+            -0.37045680348243426
+          ],
+          "family_macro_mean": -0.40648729082779994
+        },
+        "transition_layer": "L8"
+      }
+    }
+  ],
+  "position_metrics": [
+    {
+      "key": "source_abs_share",
+      "label": "source span",
+      "note": "被替换的原证据行"
+    },
+    {
+      "key": "bridge_abs_share",
+      "label": "bridge",
+      "note": "来源结束后到 query / legend 开始前"
+    },
+    {
+      "key": "query_abs_share",
+      "label": "query / legend",
+      "note": "最终问题、legend 与输出约束"
+    },
+    {
+      "key": "last_abs_share",
+      "label": "last",
+      "note": "送入下一 token 预测的最后 prompt token"
+    },
+    {
+      "key": "other_downstream_abs_share",
+      "label": "other downstream",
+      "note": "来源之后未落入其他主分区的 token"
+    }
+  ],
+  "comparison_metrics": [
+    {
+      "id": "spearman",
+      "eyebrow": "RANK FIDELITY",
+      "label": "真实 effect 的 Spearman ρ",
+      "aria_label": "full-sequence 与 source-only 对真实干预 effect 的逐层 Spearman 相关",
+      "min": -1,
+      "max": 1,
+      "series": [
+        {
+          "key": "full_spearman",
+          "label": "full sequence",
+          "tone": "full"
+        },
+        {
+          "key": "source_spearman",
+          "label": "source only",
+          "tone": "source"
+        }
+      ],
+      "note": "越高越能保留真实干预 effect 的跨样本排序；ρ 不是正确率。"
+    },
+    {
+      "id": "normalized_mae",
+      "eyebrow": "LINEARIZATION ERROR",
+      "label": "normalized MAE",
+      "aria_label": "full-sequence 与 source-only 的逐层归一化线性化误差",
+      "min": 0,
+      "max": null,
+      "series": [
+        {
+          "key": "full_normalized_mae",
+          "label": "full sequence",
+          "tone": "full"
+        },
+        {
+          "key": "source_normalized_mae",
+          "label": "source only",
+          "tone": "source"
+        }
+      ],
+      "note": "越低越接近真实 margin effect；source-only 曲线是由 sealed records 按同一 family-macro 口径事后派生，不参与冻结迁移判定。"
+    }
+  ],
+  "rows": [
+    {
+      "domain": "rag",
+      "layer": 4,
+      "source_abs_share": 0.42390281461015017,
+      "source_abs_share_ci": [
+        0.3417789626683504,
+        0.5054613551943492
+      ],
+      "downstream_abs_share": 0.5760971978177291,
+      "downstream_abs_share_ci": [
+        0.4922089979015472,
+        0.6576161354828636
+      ],
+      "bridge_abs_share": 0.15891331597291494,
+      "bridge_abs_share_ci": [
+        0.12425441404703655,
+        0.19829185470572577
+      ],
+      "query_abs_share": 0.3722310973605578,
+      "query_abs_share_ci": [
+        0.2946973987261748,
+        0.44742666372060924
+      ],
+      "last_abs_share": 0.01457827014303597,
+      "last_abs_share_ci": [
+        0.010059165031245867,
+        0.020078538963291693
+      ],
+      "other_downstream_abs_share": 0.030374514341220422,
+      "other_downstream_abs_share_ci": [
+        0.0229617005582865,
+        0.03804204551020526
+      ],
+      "full_spearman": -0.013986013986013986,
+      "full_spearman_ci": [
+        -0.6524986260500902,
+        0.5571428571428572
+      ],
+      "source_spearman": 0.18181818181818185,
+      "source_spearman_ci": [
+        -0.6344229118116029,
+        0.7727314352314354
+      ],
+      "full_normalized_mae": 0.9721529043993105,
+      "full_normalized_mae_ci": [
+        0.9453198972512376,
+        0.9974956200377215
+      ],
+      "source_normalized_mae": 0.9822561314799018,
+      "source_normalized_mae_ci": [
+        0.9685619271672361,
+        0.996895706908755
+      ],
+      "partition_sum_audit": 1.0000000124278794
+    },
+    {
+      "domain": "rag",
+      "layer": 8,
+      "source_abs_share": 0.2910539499289347,
+      "source_abs_share_ci": [
+        0.23875881254164102,
+        0.3381002240468641
+      ],
+      "downstream_abs_share": 0.7089460180656246,
+      "downstream_abs_share_ci": [
+        0.6618295797870872,
+        0.7610036392341496
+      ],
+      "bridge_abs_share": 0.14706700293003155,
+      "bridge_abs_share_ci": [
+        0.12434948917172221,
+        0.1718587264080923
+      ],
+      "query_abs_share": 0.48460665825851484,
+      "query_abs_share_ci": [
+        0.43384733664773995,
+        0.5464374426838827
+      ],
+      "last_abs_share": 0.006676780811621648,
+      "last_abs_share_ci": [
+        0.004234756935494551,
+        0.009443989129008767
+      ],
+      "other_downstream_abs_share": 0.07059557606545655,
+      "other_downstream_abs_share_ci": [
+        0.05732199870856968,
+        0.08478618808026617
+      ],
+      "full_spearman": 0.2937062937062937,
+      "full_spearman_ci": [
+        -0.48718411552346563,
+        0.8932384341637012
+      ],
+      "source_spearman": 0.2447552447552448,
+      "source_spearman_ci": [
+        -0.4838709677419355,
+        0.7862721710821731
+      ],
+      "full_normalized_mae": 0.9599479092331268,
+      "full_normalized_mae_ci": [
+        0.9376221233176777,
+        0.9827738299206558
+      ],
+      "source_normalized_mae": 0.9626181421527136,
+      "source_normalized_mae_ci": [
+        0.9452996507696486,
+        0.9786886236152674
+      ],
+      "partition_sum_audit": 0.9999999679945593
+    },
+    {
+      "domain": "rag",
+      "layer": 12,
+      "source_abs_share": 0.149216552252706,
+      "source_abs_share_ci": [
+        0.12169864932975362,
+        0.1763509534253177
+      ],
+      "downstream_abs_share": 0.8507834566812621,
+      "downstream_abs_share_ci": [
+        0.82316463497564,
+        0.878221197829739
+      ],
+      "bridge_abs_share": 0.11028594287880739,
+      "bridge_abs_share_ci": [
+        0.09446038231297448,
+        0.12497021991103763
+      ],
+      "query_abs_share": 0.6297185093639388,
+      "query_abs_share_ci": [
+        0.5908459155973239,
+        0.66646390473258
+      ],
+      "last_abs_share": 0.01124701798174925,
+      "last_abs_share_ci": [
+        0.0075151264030259455,
+        0.014888573334074569
+      ],
+      "other_downstream_abs_share": 0.09953198645676666,
+      "other_downstream_abs_share_ci": [
+        0.0812620298381709,
+        0.11626788255667644
+      ],
+      "full_spearman": 0.2447552447552448,
+      "full_spearman_ci": [
+        -0.39999999999999997,
+        0.8241758241758242
+      ],
+      "source_spearman": 0.35664335664335667,
+      "source_spearman_ci": [
+        -0.34519572953736655,
+        0.8279569892473118
+      ],
+      "full_normalized_mae": 0.8183134318844626,
+      "full_normalized_mae_ci": [
+        0.7676402572429131,
+        0.8681668285367087
+      ],
+      "source_normalized_mae": 0.957646797029471,
+      "source_normalized_mae_ci": [
+        0.9462785791761339,
+        0.9690149974815876
+      ],
+      "partition_sum_audit": 1.000000008933968
+    },
+    {
+      "domain": "rag",
+      "layer": 16,
+      "source_abs_share": 0.026247504720797576,
+      "source_abs_share_ci": [
+        0.02075337020019851,
+        0.031811680008559225
+      ],
+      "downstream_abs_share": 0.9737524900712334,
+      "downstream_abs_share_ci": [
+        0.9681062549549679,
+        0.9793170020216164
+      ],
+      "bridge_abs_share": 0.02033031610963097,
+      "bridge_abs_share_ci": [
+        0.017556161801618,
+        0.022875375192200134
+      ],
+      "query_abs_share": 0.44553667098606614,
+      "query_abs_share_ci": [
+        0.42655081545048157,
+        0.46603876254231424
+      ],
+      "last_abs_share": 0.23829360026320642,
+      "last_abs_share_ci": [
+        0.216793841730414,
+        0.25960409508465077
+      ],
+      "other_downstream_abs_share": 0.26959190271232986,
+      "other_downstream_abs_share_ci": [
+        0.25384007260029623,
+        0.2841258524623947
+      ],
+      "full_spearman": 0.04195804195804196,
+      "full_spearman_ci": [
+        -0.696784960152578,
+        0.7712229836584079
+      ],
+      "source_spearman": -0.4545454545454546,
+      "source_spearman_ci": [
+        -0.8071428571428572,
+        0.11428571428571428
+      ],
+      "full_normalized_mae": 0.12511388964897613,
+      "full_normalized_mae_ci": [
+        0.06441499115358969,
+        0.19267081840047934
+      ],
+      "source_normalized_mae": 1.0128617105862743,
+      "source_normalized_mae_ci": [
+        1.0020874144291168,
+        1.0236466448035508
+      ],
+      "partition_sum_audit": 0.999999994792031
+    },
+    {
+      "domain": "rag",
+      "layer": 20,
+      "source_abs_share": 0.01576076514437529,
+      "source_abs_share_ci": [
+        0.010166615804872924,
+        0.022319045034685545
+      ],
+      "downstream_abs_share": 0.9842392230622311,
+      "downstream_abs_share_ci": [
+        0.9777123658014604,
+        0.9899011671198044
+      ],
+      "bridge_abs_share": 0.003913547422932601,
+      "bridge_abs_share_ci": [
+        0.0032549213686817752,
+        0.004659438478962165
+      ],
+      "query_abs_share": 0.0437584127801883,
+      "query_abs_share_ci": [
+        0.04008839483879056,
+        0.04821864418106081
+      ],
+      "last_abs_share": 0.5168424166463579,
+      "last_abs_share_ci": [
+        0.4950042987696314,
+        0.5373856834562478
+      ],
+      "other_downstream_abs_share": 0.4197248462127525,
+      "other_downstream_abs_share_ci": [
+        0.4002686147765772,
+        0.4410567829653581
+      ],
+      "full_spearman": 0.3846153846153847,
+      "full_spearman_ci": [
+        -0.40075932167263884,
+        0.907906382978722
+      ],
+      "source_spearman": -0.7272727272727274,
+      "source_spearman_ci": [
+        -0.9708029197080292,
+        -0.16844439211992798
+      ],
+      "full_normalized_mae": 0.3641645386280832,
+      "full_normalized_mae_ci": [
+        0.25858377370212005,
+        0.464767480732221
+      ],
+      "source_normalized_mae": 1.0218324987716065,
+      "source_normalized_mae_ci": [
+        1.0119807828092533,
+        1.0317630675759406
+      ],
+      "partition_sum_audit": 0.9999999882066066
+    },
+    {
+      "domain": "rag",
+      "layer": 24,
+      "source_abs_share": 0.011564524630954457,
+      "source_abs_share_ci": [
+        0.009423416202992923,
+        0.014099424011055363
+      ],
+      "downstream_abs_share": 0.9884354613559324,
+      "downstream_abs_share_ci": [
+        0.9858981710618204,
+        0.9905817133556789
+      ],
+      "bridge_abs_share": 0.0037237976711791063,
+      "bridge_abs_share_ci": [
+        0.0029686639669692007,
+        0.004552307388627767
+      ],
+      "query_abs_share": 0.03583816189938784,
+      "query_abs_share_ci": [
+        0.03233700570108641,
+        0.03998222396704989
+      ],
+      "last_abs_share": 0.5513359572069242,
+      "last_abs_share_ci": [
+        0.5353969563186591,
+        0.5659698111641128
+      ],
+      "other_downstream_abs_share": 0.3975375445784412,
+      "other_downstream_abs_share_ci": [
+        0.381310323713253,
+        0.4151210488584242
+      ],
+      "full_spearman": 0.6503496503496504,
+      "full_spearman_ci": [
+        -0.015040442014126198,
+        0.9565217391304347
+      ],
+      "source_spearman": -0.2447552447552448,
+      "source_spearman_ci": [
+        -0.7197152981427175,
+        0.41935483870967744
+      ],
+      "full_normalized_mae": 0.14248299532941344,
+      "full_normalized_mae_ci": [
+        0.09014473542519648,
+        0.2015370772445436
+      ],
+      "source_normalized_mae": 0.997697856517635,
+      "source_normalized_mae_ci": [
+        0.9909818921672867,
+        1.0040604328261085
+      ],
+      "partition_sum_audit": 0.9999999859868869
+    },
+    {
+      "domain": "rag",
+      "layer": 28,
+      "source_abs_share": 0.0029909744673275933,
+      "source_abs_share_ci": [
+        0.0020191244742018342,
+        0.004025970323281881
+      ],
+      "downstream_abs_share": 0.9970090356261724,
+      "downstream_abs_share_ci": [
+        0.9959608083123689,
+        0.9979808795590389
+      ],
+      "bridge_abs_share": 0.0015318420801028333,
+      "bridge_abs_share_ci": [
+        0.0012517240198935008,
+        0.001862849843147932
+      ],
+      "query_abs_share": 0.007373064945591294,
+      "query_abs_share_ci": [
+        0.006314242925986672,
+        0.008427952947731882
+      ],
+      "last_abs_share": 0.6862387093171205,
+      "last_abs_share_ci": [
+        0.6671618317548089,
+        0.7026717966424922
+      ],
+      "other_downstream_abs_share": 0.30186541928335764,
+      "other_downstream_abs_share_ci": [
+        0.2856482751756709,
+        0.3202923027448681
+      ],
+      "full_spearman": 0.8041958041958043,
+      "full_spearman_ci": [
+        0.35293582887700536,
+        0.992831541218638
+      ],
+      "source_spearman": 0.4685314685314686,
+      "source_spearman_ci": [
+        -0.3068592057761733,
+        0.9217452975639839
+      ],
+      "full_normalized_mae": 0.14251090805634437,
+      "full_normalized_mae_ci": [
+        0.09698320801973971,
+        0.19266182720941505
+      ],
+      "source_normalized_mae": 0.9992439213768264,
+      "source_normalized_mae_ci": [
+        0.9979737690410028,
+        1.000573672221713
+      ],
+      "partition_sum_audit": 1.0000000100934998
+    },
+    {
+      "domain": "conflict_v3",
+      "layer": 4,
+      "source_abs_share": 0.33503299986058277,
+      "source_abs_share_ci": [
+        0.2946165384365697,
+        0.37620425940596464
+      ],
+      "downstream_abs_share": 0.6649669925056545,
+      "downstream_abs_share_ci": [
+        0.6239834217694123,
+        0.7054247938445137
+      ],
+      "bridge_abs_share": 0.35166701050484384,
+      "bridge_abs_share_ci": [
+        0.30640179685609836,
+        0.3931890474322642
+      ],
+      "query_abs_share": 0.2657215871103156,
+      "query_abs_share_ci": [
+        0.1988490521258363,
+        0.3402353964351912
+      ],
+      "last_abs_share": 0.013734944085158048,
+      "last_abs_share_ci": [
+        0.0087794429848378,
+        0.019326068160279816
+      ],
+      "other_downstream_abs_share": 0.033843450805337065,
+      "other_downstream_abs_share_ci": [
+        0.022084781871056596,
+        0.04674725127299649
+      ],
+      "full_spearman": -0.12448320753814371,
+      "full_spearman_ci": [
+        -0.4124256741391141,
+        0.18755576346011854
+      ],
+      "source_spearman": -0.054842252272049315,
+      "source_spearman_ci": [
+        -0.3143640178262422,
+        0.25153425398141843
+      ],
+      "full_normalized_mae": 1.032639259213493,
+      "full_normalized_mae_ci": [
+        0.9726369055434385,
+        1.0973612440238292
+      ],
+      "source_normalized_mae": 0.9812926622799465,
+      "source_normalized_mae_ci": [
+        0.9468765514386321,
+        1.0040666955987039
+      ],
+      "partition_sum_audit": 0.9999999923662373
+    },
+    {
+      "domain": "conflict_v3",
+      "layer": 8,
+      "source_abs_share": 0.3007534879019094,
+      "source_abs_share_ci": [
+        0.2781820824251925,
+        0.3222225564452577
+      ],
+      "downstream_abs_share": 0.6992465278649287,
+      "downstream_abs_share_ci": [
+        0.6770601309991088,
+        0.7220388080719685
+      ],
+      "bridge_abs_share": 0.36053037586638803,
+      "bridge_abs_share_ci": [
+        0.32511385771681445,
+        0.39791064782567087
+      ],
+      "query_abs_share": 0.2879565725880365,
+      "query_abs_share_ci": [
+        0.24461411094609525,
+        0.3316986053966479
+      ],
+      "last_abs_share": 0.015949301962902413,
+      "last_abs_share_ci": [
+        0.008454619499562952,
+        0.025028351446848302
+      ],
+      "other_downstream_abs_share": 0.034810277447601685,
+      "other_downstream_abs_share_ci": [
+        0.02584025736771045,
+        0.045182770324578674
+      ],
+      "full_spearman": 0.08487491423055252,
+      "full_spearman_ci": [
+        -0.23544945984219512,
+        0.34952195512031287
+      ],
+      "source_spearman": 0.26724716583363717,
+      "source_spearman_ci": [
+        -0.16783526656456163,
+        0.6510511872487099
+      ],
+      "full_normalized_mae": 1.0477156676564898,
+      "full_normalized_mae_ci": [
+        0.9870146852843561,
+        1.1086267519141038
+      ],
+      "source_normalized_mae": 0.9031701163379919,
+      "source_normalized_mae_ci": [
+        0.8229996061337271,
+        0.9814512011110567
+      ],
+      "partition_sum_audit": 1.000000015766838
+    },
+    {
+      "domain": "conflict_v3",
+      "layer": 12,
+      "source_abs_share": 0.18200323246000263,
+      "source_abs_share_ci": [
+        0.16152420563228154,
+        0.20212249008487645
+      ],
+      "downstream_abs_share": 0.8179967734654411,
+      "downstream_abs_share_ci": [
+        0.7981112882177179,
+        0.8385897137311097
+      ],
+      "bridge_abs_share": 0.26591737413362254,
+      "bridge_abs_share_ci": [
+        0.22967128834815406,
+        0.30387730761309584
+      ],
+      "query_abs_share": 0.4636402088930351,
+      "query_abs_share_ci": [
+        0.41651700262149477,
+        0.5131061687502664
+      ],
+      "last_abs_share": 0.01345632097327467,
+      "last_abs_share_ci": [
+        0.007942066951076807,
+        0.019569766318718866
+      ],
+      "other_downstream_abs_share": 0.07498286946550853,
+      "other_downstream_abs_share_ci": [
+        0.05953252459752194,
+        0.09228669232168701
+      ],
+      "full_spearman": 0.39042460546054164,
+      "full_spearman_ci": [
+        0.09132447915136502,
+        0.6377037483261178
+      ],
+      "source_spearman": -0.00043525597041308984,
+      "source_spearman_ci": [
+        -0.46545578019762157,
+        0.4687071886044939
+      ],
+      "full_normalized_mae": 0.9029083438146681,
+      "full_normalized_mae_ci": [
+        0.8199457290351512,
+        0.9914465195623109
+      ],
+      "source_normalized_mae": 0.9954612542830762,
+      "source_normalized_mae_ci": [
+        0.9054783619763961,
+        1.0913226676246042
+      ],
+      "partition_sum_audit": 1.0000000059254435
+    },
+    {
+      "domain": "conflict_v3",
+      "layer": 16,
+      "source_abs_share": 0.039605850140520114,
+      "source_abs_share_ci": [
+        0.030939879587502075,
+        0.048919023308076855
+      ],
+      "downstream_abs_share": 0.9603941640391055,
+      "downstream_abs_share_ci": [
+        0.951468305008205,
+        0.9691338269672637
+      ],
+      "bridge_abs_share": 0.09095533985356513,
+      "bridge_abs_share_ci": [
+        0.0816470407063951,
+        0.09973609122381315
+      ],
+      "query_abs_share": 0.6358957146003337,
+      "query_abs_share_ci": [
+        0.596235464071972,
+        0.6742865373449061
+      ],
+      "last_abs_share": 0.04084395764813649,
+      "last_abs_share_ci": [
+        0.03026179911087013,
+        0.051684561223764414
+      ],
+      "other_downstream_abs_share": 0.19269915193707013,
+      "other_downstream_abs_share_ci": [
+        0.15392774476733775,
+        0.2336761491359233
+      ],
+      "full_spearman": 0.847443374394286,
+      "full_spearman_ci": [
+        0.6903142182976396,
+        0.945774348315406
+      ],
+      "source_spearman": -0.09532105752046668,
+      "source_spearman_ci": [
+        -0.46255215470447686,
+        0.3973812693066029
+      ],
+      "full_normalized_mae": 0.5683905066762651,
+      "full_normalized_mae_ci": [
+        0.4561531050313645,
+        0.7072650696191152
+      ],
+      "source_normalized_mae": 0.9982266658650977,
+      "source_normalized_mae_ci": [
+        0.9868463071987911,
+        1.008509814846085
+      ],
+      "partition_sum_audit": 1.0000000141796257
+    },
+    {
+      "domain": "conflict_v3",
+      "layer": 20,
+      "source_abs_share": 0.008627468291628852,
+      "source_abs_share_ci": [
+        0.007068389777816153,
+        0.010349484054040592
+      ],
+      "downstream_abs_share": 0.9913725337744417,
+      "downstream_abs_share_ci": [
+        0.9897201723391759,
+        0.9929929947626137
+      ],
+      "bridge_abs_share": 0.03126809131586592,
+      "bridge_abs_share_ci": [
+        0.024022580741905195,
+        0.03821531337124668
+      ],
+      "query_abs_share": 0.10826939374827194,
+      "query_abs_share_ci": [
+        0.08379604377711114,
+        0.1377762725024772
+      ],
+      "last_abs_share": 0.45276130052191615,
+      "last_abs_share_ci": [
+        0.40613958224358604,
+        0.49825507617134096
+      ],
+      "other_downstream_abs_share": 0.3990737481883877,
+      "other_downstream_abs_share_ci": [
+        0.3665327183964725,
+        0.4370424886691615
+      ],
+      "full_spearman": 0.9719265819324296,
+      "full_spearman_ci": [
+        0.9122423315556262,
+        0.9940908249241402
+      ],
+      "source_spearman": -0.21675747326571876,
+      "source_spearman_ci": [
+        -0.6349965662214574,
+        0.2507715621296398
+      ],
+      "full_normalized_mae": 0.247946226029169,
+      "full_normalized_mae_ci": [
+        0.19699288332151724,
+        0.29335261461880435
+      ],
+      "source_normalized_mae": 1.000208407411618,
+      "source_normalized_mae_ci": [
+        0.9973748865463098,
+        1.002847539077564
+      ],
+      "partition_sum_audit": 1.0000000020660704
+    },
+    {
+      "domain": "conflict_v3",
+      "layer": 24,
+      "source_abs_share": 0.00778571868410317,
+      "source_abs_share_ci": [
+        0.005491447895106449,
+        0.01066662323783115
+      ],
+      "downstream_abs_share": 0.9922142941028742,
+      "downstream_abs_share_ci": [
+        0.9892545052856451,
+        0.9944879257570857
+      ],
+      "bridge_abs_share": 0.03276666987375214,
+      "bridge_abs_share_ci": [
+        0.02443313900377941,
+        0.041649861433303216
+      ],
+      "query_abs_share": 0.0840662262923738,
+      "query_abs_share_ci": [
+        0.06264200695833345,
+        0.10919823966808326
+      ],
+      "last_abs_share": 0.5368199768732237,
+      "last_abs_share_ci": [
+        0.48830721729127946,
+        0.5844176155944082
+      ],
+      "other_downstream_abs_share": 0.33856142106352466,
+      "other_downstream_abs_share_ci": [
+        0.31036842699810224,
+        0.3722460650514881
+      ],
+      "full_spearman": 0.968444534169125,
+      "full_spearman_ci": [
+        0.906604304871315,
+        0.9906030697545084
+      ],
+      "source_spearman": -0.08705119408261797,
+      "source_spearman_ci": [
+        -0.5348024061453882,
+        0.35339451403058736
+      ],
+      "full_normalized_mae": 0.21629577091761998,
+      "full_normalized_mae_ci": [
+        0.15587718055764785,
+        0.27408354021755416
+      ],
+      "source_normalized_mae": 1.00033679256127,
+      "source_normalized_mae_ci": [
+        0.9977121139426248,
+        1.002826124508719
+      ],
+      "partition_sum_audit": 1.0000000127869775
+    },
+    {
+      "domain": "conflict_v3",
+      "layer": 28,
+      "source_abs_share": 0.005300126406667052,
+      "source_abs_share_ci": [
+        0.003687000755416555,
+        0.007414203770681477
+      ],
+      "downstream_abs_share": 0.9946998681100929,
+      "downstream_abs_share_ci": [
+        0.9925630646049822,
+        0.996325253687631
+      ],
+      "bridge_abs_share": 0.02198731024634654,
+      "bridge_abs_share_ci": [
+        0.015726797864744464,
+        0.02914247685078826
+      ],
+      "query_abs_share": 0.03603743300929752,
+      "query_abs_share_ci": [
+        0.024413060219193747,
+        0.05074335917491614
+      ],
+      "last_abs_share": 0.6513831034169638,
+      "last_abs_share_ci": [
+        0.6040598920975202,
+        0.6898142767173164
+      ],
+      "other_downstream_abs_share": 0.28529202143748494,
+      "other_downstream_abs_share_ci": [
+        0.26224304325775,
+        0.3129925538163654
+      ],
+      "full_spearman": 0.9754086296957344,
+      "full_spearman_ci": [
+        0.9194665605588849,
+        0.9960372005506422
+      ],
+      "source_spearman": -0.15190433367416836,
+      "source_spearman_ci": [
+        -0.5468566225667884,
+        0.2862276037663063
+      ],
+      "full_normalized_mae": 0.20979681741623651,
+      "full_normalized_mae_ci": [
+        0.15395711255239483,
+        0.27670635050279674
+      ],
+      "source_normalized_mae": 0.9999752823352104,
+      "source_normalized_mae_ci": [
+        0.9984987854580049,
+        1.0011446267769368
+      ],
+      "partition_sum_audit": 0.9999999945167599
+    },
+    {
+      "domain": "instruction_provenance",
+      "layer": 4,
+      "source_abs_share": 0.4905312895441154,
+      "source_abs_share_ci": [
+        0.4677611841678545,
+        0.5136954703340662
+      ],
+      "downstream_abs_share": 0.5094687098777851,
+      "downstream_abs_share_ci": [
+        0.48707079034069,
+        0.5325278104209403
+      ],
+      "bridge_abs_share": 0.43614848027770386,
+      "bridge_abs_share_ci": [
+        0.41518859884342757,
+        0.45863386958442254
+      ],
+      "query_abs_share": 0.011103352546775455,
+      "query_abs_share_ci": [
+        0.008732416215820259,
+        0.013554329522530764
+      ],
+      "last_abs_share": 0.008575266342963185,
+      "last_abs_share_ci": [
+        0.005257154764681756,
+        0.012405108547084973
+      ],
+      "other_downstream_abs_share": 0.05364161071034269,
+      "other_downstream_abs_share_ci": [
+        0.04437796625810625,
+        0.06268064015719874
+      ],
+      "full_spearman": -0.05731067848989544,
+      "full_spearman_ci": [
+        -0.3444725356563933,
+        0.2132493880155891
+      ],
+      "source_spearman": -0.11878144443464479,
+      "source_spearman_ci": [
+        -0.41615375810855176,
+        0.15816953358187544
+      ],
+      "full_normalized_mae": 1.2765450903347562,
+      "full_normalized_mae_ci": [
+        1.1404130110191955,
+        1.4567264932716815
+      ],
+      "source_normalized_mae": 1.2407843539225205,
+      "source_normalized_mae_ci": [
+        1.0960766924155996,
+        1.4426729383776566
+      ],
+      "partition_sum_audit": 0.9999999994219005
+    },
+    {
+      "domain": "instruction_provenance",
+      "layer": 8,
+      "source_abs_share": 0.34804284293709326,
+      "source_abs_share_ci": [
+        0.3256297486961307,
+        0.37322277365184975
+      ],
+      "downstream_abs_share": 0.6519571485505806,
+      "downstream_abs_share_ci": [
+        0.6274492100073188,
+        0.6743101024568435
+      ],
+      "bridge_abs_share": 0.4708565992553358,
+      "bridge_abs_share_ci": [
+        0.44853593218027604,
+        0.4917147599235313
+      ],
+      "query_abs_share": 0.016224942249968406,
+      "query_abs_share_ci": [
+        0.013518071014528055,
+        0.01910201362699301
+      ],
+      "last_abs_share": 0.012725862318067991,
+      "last_abs_share_ci": [
+        0.009441672358627692,
+        0.016580639159114202
+      ],
+      "other_downstream_abs_share": 0.1521497447272084,
+      "other_downstream_abs_share_ci": [
+        0.13707267478160556,
+        0.1670710786497808
+      ],
+      "full_spearman": -0.13284910859119028,
+      "full_spearman_ci": [
+        -0.40104988644479134,
+        0.21253263680257914
+      ],
+      "source_spearman": -0.23329332542878164,
+      "source_spearman_ci": [
+        -0.43569150306785054,
+        0.039466898309188286
+      ],
+      "full_normalized_mae": 1.220756838151387,
+      "full_normalized_mae_ci": [
+        1.0541445203057331,
+        1.4186824966287288
+      ],
+      "source_normalized_mae": 1.1621245431580713,
+      "source_normalized_mae_ci": [
+        1.0653710221087462,
+        1.2501386458647836
+      ],
+      "partition_sum_audit": 0.9999999914876738
+    },
+    {
+      "domain": "instruction_provenance",
+      "layer": 12,
+      "source_abs_share": 0.2840249259065612,
+      "source_abs_share_ci": [
+        0.2680599764733749,
+        0.29814531249628096
+      ],
+      "downstream_abs_share": 0.7159750741324841,
+      "downstream_abs_share_ci": [
+        0.7018299596068253,
+        0.7318356194194746
+      ],
+      "bridge_abs_share": 0.4596106297493123,
+      "bridge_abs_share_ci": [
+        0.44449469825859267,
+        0.4744633551178941
+      ],
+      "query_abs_share": 0.021927348110614905,
+      "query_abs_share_ci": [
+        0.01997724440359002,
+        0.023797712751966713
+      ],
+      "last_abs_share": 0.02263853708013981,
+      "last_abs_share_ci": [
+        0.016858887036169754,
+        0.02982504062169672
+      ],
+      "other_downstream_abs_share": 0.21179855919241686,
+      "other_downstream_abs_share_ci": [
+        0.19279558964958718,
+        0.2345217083224652
+      ],
+      "full_spearman": 0.04340722831183102,
+      "full_spearman_ci": [
+        -0.3188952020973743,
+        0.453945236681318
+      ],
+      "source_spearman": -0.1775700487308699,
+      "source_spearman_ci": [
+        -0.5183559949032794,
+        0.19352051031294862
+      ],
+      "full_normalized_mae": 1.1389178901910781,
+      "full_normalized_mae_ci": [
+        0.8020989902631792,
+        1.5879292774715688
+      ],
+      "source_normalized_mae": 1.131142811796495,
+      "source_normalized_mae_ci": [
+        0.9863059169847299,
+        1.2997784063185902
+      ],
+      "partition_sum_audit": 1.0000000000390452
+    },
+    {
+      "domain": "instruction_provenance",
+      "layer": 16,
+      "source_abs_share": 0.17997340407558227,
+      "source_abs_share_ci": [
+        0.16186731700596332,
+        0.1997656516040621
+      ],
+      "downstream_abs_share": 0.8200265902889702,
+      "downstream_abs_share_ci": [
+        0.8007005556287737,
+        0.8386831587566721
+      ],
+      "bridge_abs_share": 0.41224622141628436,
+      "bridge_abs_share_ci": [
+        0.39308279769131954,
+        0.431741483208276
+      ],
+      "query_abs_share": 0.026534667803268856,
+      "query_abs_share_ci": [
+        0.022777907990156783,
+        0.03031742723634007
+      ],
+      "last_abs_share": 0.0612986420172428,
+      "last_abs_share_ci": [
+        0.046847333591998566,
+        0.07573912795379141
+      ],
+      "other_downstream_abs_share": 0.31994705905217424,
+      "other_downstream_abs_share_ci": [
+        0.27438223483784163,
+        0.36338095196792514
+      ],
+      "full_spearman": 0.6017347551474885,
+      "full_spearman_ci": [
+        0.39467002618038655,
+        0.8007669832350072
+      ],
+      "source_spearman": 0.21057705840556615,
+      "source_spearman_ci": [
+        -0.04286789438943587,
+        0.4292698100179947
+      ],
+      "full_normalized_mae": 0.8452263106192862,
+      "full_normalized_mae_ci": [
+        0.6225792089959499,
+        1.1914644120196116
+      ],
+      "source_normalized_mae": 0.9490919756969172,
+      "source_normalized_mae_ci": [
+        0.8430735125619258,
+        1.11596113318969
+      ],
+      "partition_sum_audit": 0.9999999943645524
+    },
+    {
+      "domain": "instruction_provenance",
+      "layer": 20,
+      "source_abs_share": 0.09894506205955074,
+      "source_abs_share_ci": [
+        0.08126645618892936,
+        0.11758228165551518
+      ],
+      "downstream_abs_share": 0.9010549479923787,
+      "downstream_abs_share_ci": [
+        0.8826700673068337,
+        0.9185217250058274
+      ],
+      "bridge_abs_share": 0.17024736499082085,
+      "bridge_abs_share_ci": [
+        0.14626268265056674,
+        0.19704986500414348
+      ],
+      "query_abs_share": 0.01188092335725484,
+      "query_abs_share_ci": [
+        0.009840053427390492,
+        0.014016908985272266
+      ],
+      "last_abs_share": 0.2898952859920672,
+      "last_abs_share_ci": [
+        0.2519353033497217,
+        0.32928303643444423
+      ],
+      "other_downstream_abs_share": 0.4290313736522358,
+      "other_downstream_abs_share_ci": [
+        0.39059922597335484,
+        0.4671457376707778
+      ],
+      "full_spearman": 0.9263310526117484,
+      "full_spearman_ci": [
+        0.8552059502664446,
+        0.9636688065824766
+      ],
+      "source_spearman": 0.03196698781098274,
+      "source_spearman_ci": [
+        -0.16627136634389061,
+        0.22266078576951848
+      ],
+      "full_normalized_mae": 0.3333044937678746,
+      "full_normalized_mae_ci": [
+        0.2497442630354642,
+        0.4509048401909215
+      ],
+      "source_normalized_mae": 1.0144347894005479,
+      "source_normalized_mae_ci": [
+        0.989796338360567,
+        1.0516057597400639
+      ],
+      "partition_sum_audit": 1.0000000100519295
+    },
+    {
+      "domain": "instruction_provenance",
+      "layer": 24,
+      "source_abs_share": 0.08538022127814533,
+      "source_abs_share_ci": [
+        0.06580796617338158,
+        0.10697721554479273
+      ],
+      "downstream_abs_share": 0.914619764775614,
+      "downstream_abs_share_ci": [
+        0.8926532965197064,
+        0.9343357648862215
+      ],
+      "bridge_abs_share": 0.17748701220481475,
+      "bridge_abs_share_ci": [
+        0.14715810865446702,
+        0.2128304857750108
+      ],
+      "query_abs_share": 0.00880185186246745,
+      "query_abs_share_ci": [
+        0.0073973920241761195,
+        0.010319944541099486
+      ],
+      "last_abs_share": 0.32644229441999767,
+      "last_abs_share_ci": [
+        0.2757328639443217,
+        0.37625964286937286
+      ],
+      "other_downstream_abs_share": 0.4018886062883342,
+      "other_downstream_abs_share_ci": [
+        0.3593619486466308,
+        0.4480002868550589
+      ],
+      "full_spearman": 0.9448324941872829,
+      "full_spearman_ci": [
+        0.8817442188478263,
+        0.9789220344344266
+      ],
+      "source_spearman": 0.09217877992071054,
+      "source_spearman_ci": [
+        -0.1566585244154062,
+        0.31595695419362213
+      ],
+      "full_normalized_mae": 0.35048388897308286,
+      "full_normalized_mae_ci": [
+        0.28020583604995997,
+        0.4557684930920531
+      ],
+      "source_normalized_mae": 0.9937178681770872,
+      "source_normalized_mae_ci": [
+        0.9597778731998496,
+        1.0363310587678574
+      ],
+      "partition_sum_audit": 0.9999999860537594
+    },
+    {
+      "domain": "instruction_provenance",
+      "layer": 28,
+      "source_abs_share": 0.08404399871631545,
+      "source_abs_share_ci": [
+        0.06291734203500945,
+        0.10763382133598903
+      ],
+      "downstream_abs_share": 0.9159560140016726,
+      "downstream_abs_share_ci": [
+        0.8927807180458011,
+        0.9366978187837111
+      ],
+      "bridge_abs_share": 0.14718360604524222,
+      "bridge_abs_share_ci": [
+        0.11694696682046386,
+        0.1806031492467141
+      ],
+      "query_abs_share": 0.007214193503115203,
+      "query_abs_share_ci": [
+        0.005400059192205276,
+        0.00918679687346046
+      ],
+      "last_abs_share": 0.36517762775489854,
+      "last_abs_share_ci": [
+        0.31763620028510603,
+        0.4156208218119247
+      ],
+      "other_downstream_abs_share": 0.3963805866984167,
+      "other_downstream_abs_share_ci": [
+        0.3512859262504219,
+        0.4388244103945961
+      ],
+      "full_spearman": 0.9350343934712453,
+      "full_spearman_ci": [
+        0.8684726777446657,
+        0.975706075120148
+      ],
+      "source_spearman": 0.06749194515572214,
+      "source_spearman_ci": [
+        -0.19114088049834468,
+        0.26000737281713443
+      ],
+      "full_normalized_mae": 0.31813942268490797,
+      "full_normalized_mae_ci": [
+        0.24537232503266612,
+        0.42015911481809537
+      ],
+      "source_normalized_mae": 0.9969433106947692,
+      "source_normalized_mae_ci": [
+        0.9670460879422348,
+        1.0365693760805623
+      ],
+      "partition_sum_audit": 1.000000012717988
+    }
+  ],
+  "boundary": "这是 E3 小面板机制图谱，且每个来源需要额外反事实 forward，计算成本高；它不是 truth signal、confidence measure、意识证据、隐藏自然语言 CoT 或可部署 gate。",
+  "derived_note": "五分区与 CI 直接取 report.json；full 指标与 compact atlas_table.json 逐值核验。source-only normalized MAE 为 posthoc-derived：family-macro mean(|source g·Δh − actual effect|) / family-macro mean(|actual effect|)。",
+  "provenance": [
+    "artifacts/qwen3_5_4b/causal_transport_atlas_v1_3/report.json",
+    "artifacts/qwen3_5_4b/causal_transport_atlas_v1_3/atlas_table.json",
+    "artifacts/qwen3_5_4b/causal_transport_atlas_v1_3/visualization_supplement.json",
+    "docs/causal_transport_atlas_v1_3_findings_zh.md"
+  ],
+  "source_hashes": {
+    "report_sha256": "ac5c5635aa938cb55e136b32b5fe0c37218feca0eda161593c6d7b493bfd9e09",
+    "atlas_table_sha256": "75c42b488593320138a033287d7d1bbe4de36d217ca05590b360e2cccbb70628",
+    "visualization_supplement_sha256": "053cd8730ee89a701e367625c742a8633b9753360e083346a060df6a474b91d6",
+    "records_sha256": "343455591d014626de5a12a6e66b688e91c3f65f52737aef240d912c5ef0fa78"
+  }
+}

@@ -1213,7 +1213,252 @@ function explorationPanel(explore) {
 }
 
 
-function render(findings, traces) {
+function atlasLineChart(rows, metric) {
+  const width = 430;
+  const height = 188;
+  const left = 40;
+  const right = 18;
+  const top = 18;
+  const bottom = 35;
+  const values = rows.flatMap((row) => metric.series
+    .map((item) => Number(row[item.key]))
+    .filter(Number.isFinite));
+  const yMin = Number.isFinite(metric.min) ? metric.min : 0;
+  const rawMax = values.length ? Math.max(...values) : 1;
+  const yMax = Number.isFinite(metric.max)
+    ? metric.max
+    : Math.max(1, Math.ceil(rawMax * 2) / 2);
+  const x = (index) => left
+    + (index / Math.max(rows.length - 1, 1)) * (width - left - right);
+  const y = (value) => top
+    + ((yMax - value) / Math.max(yMax - yMin, 1e-9)) * (height - top - bottom);
+  const ticks = metric.min === -1 ? [-1, 0, 1] : [0, yMax / 2, yMax];
+  const grid = ticks.map((tick) => `
+    <g>
+      <line class="atlas-grid-line" x1="${left}" x2="${width - right}" y1="${y(tick)}" y2="${y(tick)}"></line>
+      <text class="atlas-axis-label" x="${left - 8}" y="${y(tick) + 4}">${fmt(tick, tick === 0 ? 0 : 2)}</text>
+    </g>
+  `).join("");
+  const lines = metric.series.map((item) => {
+    const validRows = rows.filter((row) => Number.isFinite(Number(row[item.key])));
+    const points = validRows
+      .map((row) => `${x(rows.indexOf(row))},${y(Number(row[item.key]))}`)
+      .join(" ");
+    const circles = validRows.map((row) => `
+      <circle cx="${x(rows.indexOf(row))}" cy="${y(Number(row[item.key]))}" r="4">
+        <title>L${row.layer} · ${escapeHtml(item.label)}: ${fmt(Number(row[item.key]), 3)}</title>
+      </circle>
+    `).join("");
+    return `<g class="atlas-series ${escapeHtml(item.tone)}"><polyline points="${points}"></polyline>${circles}</g>`;
+  }).join("");
+  const labels = rows.map((row, index) => `
+    <text class="atlas-x-label" x="${x(index)}" y="${height - 10}">L${row.layer}</text>
+  `).join("");
+  const legend = metric.series.map((item) => `
+    <span class="${escapeHtml(item.tone)}"><i></i>${escapeHtml(item.label)}</span>
+  `).join("");
+
+  return `
+    <div class="atlas-chart-card">
+      <header>
+        <div><span>${escapeHtml(metric.eyebrow)}</span><strong>${escapeHtml(metric.label)}</strong></div>
+        <div class="atlas-chart-legend">${legend}</div>
+      </header>
+      <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(metric.aria_label)}">
+        ${grid}${lines}${labels}
+      </svg>
+      <p>${escapeHtml(metric.note)}</p>
+    </div>
+  `;
+}
+
+
+function atlasDomainPanel(data, domain, index) {
+  const rows = data.rows
+    .filter((row) => row.domain === domain.id)
+    .sort((left, right) => left.layer - right.layer);
+  const headerCells = data.position_metrics.map((metric) => `
+    <span role="columnheader" title="${escapeHtml(metric.note)}">${escapeHtml(metric.label)}</span>
+  `).join("");
+  const heatRows = rows.map((row) => {
+    const cells = data.position_metrics.map((metric) => {
+      const value = Number(row[metric.key]);
+      const opacity = Number.isFinite(value)
+        ? Math.min(0.94, 0.07 + Math.max(0, value) * 0.87)
+        : 0;
+      return `
+        <span class="${value >= 0.5 ? "heat-cell high" : "heat-cell"}" role="cell"
+          style="--heat-opacity:${opacity}"
+          title="L${row.layer} · ${escapeHtml(metric.label)}: ${pct(value, 2)}">${pct(value, 1)}</span>
+      `;
+    }).join("");
+    return `<div class="atlas-heatmap-row" role="row"><strong role="rowheader">L${row.layer}</strong>${cells}</div>`;
+  }).join("");
+  const charts = data.comparison_metrics
+    .map((metric) => atlasLineChart(rows, metric))
+    .join("");
+
+  return `
+    <div class="atlas-domain-panel" role="tabpanel" data-atlas-panel="${escapeHtml(domain.id)}" ${index === 0 ? "" : "hidden"}>
+      <div class="atlas-domain-note">
+        <div><span>${escapeHtml(domain.label)}</span><strong>${escapeHtml(domain.intervention_count)} 次等长干预</strong></div>
+        <p>${escapeHtml(domain.description)}</p>
+        <b>${escapeHtml(domain.result_label)}</b>
+      </div>
+      <div class="atlas-visual-grid">
+        <div class="atlas-heatmap-shell">
+          <div class="atlas-panel-title">
+            <div><span>LAYER × POSITION</span><strong>|g · Δh| 在完整序列中的占比</strong></div>
+            <p>每行按层读取；颜色越深，占该次有限干预的绝对贡献越大。</p>
+          </div>
+          <div class="atlas-table-scroll">
+            <div class="atlas-heatmap" role="table" aria-label="${escapeHtml(domain.label)} 各层因果贡献位置占比">
+              <div class="atlas-heatmap-row head" role="row"><span role="columnheader">层</span>${headerCells}</div>
+              ${heatRows}
+            </div>
+          </div>
+          <div class="atlas-heat-legend"><span>低</span><i></i><i></i><i></i><i></i><i></i><span>高</span></div>
+          <p class="atlas-partition-note">五个主分区互斥；upstream control 不进入“向下游迁移”的定义。</p>
+        </div>
+        <aside class="atlas-comparison">${charts}</aside>
+      </div>
+      <footer class="atlas-boundary">
+        <div><span>如何读</span><p>${escapeHtml(domain.interpretation)}</p></div>
+        <div><span>不能怎么读</span><p>${escapeHtml(data.boundary)}</p></div>
+        <details>
+          <summary>数据与口径</summary>
+          <ul>${data.provenance.map((source) => `<li><code>${escapeHtml(source)}</code></li>`).join("")}</ul>
+          <p>${escapeHtml(data.derived_note)}</p>
+        </details>
+      </footer>
+    </div>
+  `;
+}
+
+
+function causalTransportAtlas(data) {
+  const tabs = data.domains.map((domain, index) => `
+    <button aria-selected="${index === 0}" class="${index === 0 ? "active" : ""}"
+      data-atlas-domain="${escapeHtml(domain.id)}" role="tab" type="button">
+      <span>${escapeHtml(domain.label)}</span><small>${escapeHtml(domain.subtitle)}</small>
+    </button>
+  `).join("");
+  const panels = data.domains.map((domain, index) => atlasDomainPanel(data, domain, index)).join("");
+  const samples = data.sample_summary.map((item) => `
+    <div><dt>${escapeHtml(item.label)}</dt><dd>${escapeHtml(item.value)}</dd></div>
+  `).join("");
+
+  return `
+    <section class="causal-atlas" aria-labelledby="causal-atlas-title">
+      <header class="causal-atlas-head">
+        <div>
+          <div class="atlas-badges">
+            ${tag("candidate", data.evidence_level)}
+            <span class="atlas-method-badge">DESCRIPTIVE MECHANISM ATLAS</span>
+            <span class="atlas-guardrail-badge">高成本 · 额外反事实 forward</span>
+            <span class="atlas-guardrail-badge danger">NOT TRUTH / GATE</span>
+          </div>
+          <h3 id="causal-atlas-title">${escapeHtml(data.title)}</h3>
+          <p>${escapeHtml(data.summary)}</p>
+        </div>
+        <dl>${samples}</dl>
+      </header>
+      <div class="atlas-tabs" role="tablist" aria-label="切换 causal transport 场景">${tabs}</div>
+      ${panels}
+    </section>
+  `;
+}
+
+
+function noncodingOverview(data, atlas) {
+  const objects = Object.fromEntries(
+    data.objects.map((item) => [item.id, item]),
+  );
+  const objectCards = data.objects.map((item, index) => `
+    <article class="object-card object-${index + 1}">
+      <span>0${index + 1} · ${escapeHtml(item.short_name)}</span>
+      <h3>${escapeHtml(item.zh_name)}</h3>
+      <p>${escapeHtml(item.definition)}</p>
+      <dl>
+        <div><dt>当前强项</dt><dd>${escapeHtml(item.best_supported_use)}</dd></div>
+        <div><dt>必须对照</dt><dd>${escapeHtml(item.required_controls)}</dd></div>
+      </dl>
+    </article>
+  `).join("");
+  const findingCard = (finding, tone) => `
+    <article class="noncoding-finding ${tone}">
+      <header>
+        ${tag(tone, finding.label)}
+        <span>${escapeHtml(objects[finding.object]?.short_name)}</span>
+      </header>
+      <h3>${escapeHtml(finding.title)}</h3>
+      <p>${escapeHtml(finding.summary)}</p>
+      ${Array.isArray(finding.metrics) ? `
+        <dl class="noncoding-metrics">
+          ${finding.metrics.map((metric) => `
+            <div>
+              <dt>${escapeHtml(metric.label)}</dt>
+              <dd>${escapeHtml(metric.value)}</dd>
+              <span>${escapeHtml(metric.note)}</span>
+            </div>
+          `).join("")}
+        </dl>
+      ` : ""}
+      <p class="noncoding-boundary"><b>边界：</b>${escapeHtml(finding.boundary)}</p>
+      <details class="noncoding-sources">
+        <summary>核对来源</summary>
+        <ul>${finding.provenance.map((source) => `<li><code>${escapeHtml(source)}</code></li>`).join("")}</ul>
+      </details>
+    </article>
+  `;
+  const positiveCards = data.positive_findings
+    .map((finding) => findingCard(finding, "positive"))
+    .join("");
+  const negativeCards = data.negative_findings
+    .map((finding) => findingCard(finding, "negative"))
+    .join("");
+
+  return `
+    <section class="content-section noncoding-section" id="noncoding">
+      ${sectionTitle(
+        "01",
+        "NON-CODING · VERIFIED EVIDENCE",
+        "先分清三种对象，再看哪些结论真正成立",
+        "以下数字只来自仓库内 2026-08-01 的两份阶段结论及其对应 JSON artifacts。所有结果均限于 Qwen3.5-4B；“机制可定位”不等于“答案会正确”。",
+      )}
+
+      <div class="object-grid" aria-label="固定平均 J、local Jacobian 与 raw/JQ 的区别">
+        ${objectCards}
+      </div>
+
+      ${causalTransportAtlas(atlas)}
+
+      <div class="noncoding-claim-head positive">
+        <div><span>POSITIVE / PROMISING</span><h3>保留下来的正向证据</h3></div>
+        <p>positive 指预先冻结、复制或有直接因果干预支持；每项仍保留自己的适用边界。</p>
+      </div>
+      <div class="noncoding-findings-grid positive-grid">${positiveCards}</div>
+
+      <div class="noncoding-claim-head negative">
+        <div><span>NEGATIVE / BOUNDARY</span><h3>未成立的命题与证据边界</h3></div>
+        <p>这些路线已经在 raw、JQ、attention 或独立复制面前失去支持，不应换个说法继续过度宣称。</p>
+      </div>
+      <div class="noncoding-findings-grid negative-grid">${negativeCards}</div>
+
+      <div class="auditor-shape">
+        <div>
+          <span>EVIDENCE DEPENDENCY AUDITOR</span>
+          <h3>当前最可执行的系统形态</h3>
+          <p>Jacobian 负责定位；正确性仍由结构化证据与反事实验证承担。</p>
+        </div>
+        <ol>${data.recommended_system_shape.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol>
+      </div>
+    </section>
+  `;
+}
+
+
+function render(findings, traces, noncoding, atlas) {
   const study = findings.study;
   const paired256 = findings.paired_timeline.find((row) => row.offset === 256);
   const absolute256 = findings.absolute_timeline.find((row) => row.offset === 256);
@@ -1225,35 +1470,40 @@ function render(findings, traces) {
   app.innerHTML = `
     <main>
       <header class="topbar">
-        <a href="#top" class="brand"><span>J</span><div><strong>J-space × Reliability</strong><small>coding · answerability · dialogue</small></div></a>
-        <nav><a href="#answer">结论</a><a href="#latest">最新动作实验</a><a href="#evidence">证据</a><a href="#explore">完整探索</a><a href="#problems">10 道原题</a></nav>
+        <a href="#top" class="brand"><span>J</span><div><strong>J-space Evidence Map</strong><small>non-coding first · coding archive</small></div></a>
+        <nav><a href="#noncoding">非 coding</a><a href="#coding">coding 档案</a><a href="#explore">完整探索</a><a href="#problems">10 道原题</a></nav>
         <span class="public-chip">公开访问 · 无需登录</span>
       </header>
 
       <section class="hero" id="top">
         <div class="hero-copy">
-          <p class="eyebrow">STRICT EXACT-PREFIX · UPDATED 2026-07-31</p>
-          <h1>不能读出“哪一刻犯错”，<br>但可以探索<em>“何时采取动作”</em></h1>
+          <p class="eyebrow">NON-CODING EVIDENCE MAP · ${escapeHtml(noncoding.as_of)}</p>
+          <h1>J-space 最强的证据<br>不是读心，而是<em>定位依赖</em></h1>
           <p class="hero-lead">
-            最终结果不是把几个 J-space 关键词当成模型思维，而是在固定决策点把
-            连续内部表征用于澄清或追加采样。两类动作都有正向 utility，但
-            raw/logit 与 J 持平或更好，因此成立的是 latent risk routing，
-            不是 J-space 独有的“自知”。
+            ${escapeHtml(noncoding.summary)}
           </p>
-          <div class="hero-actions"><a class="primary-button" href="#latest">先看最终有效发现 ↓</a><a class="secondary-button" href="#problems">直接看 10 道原题</a></div>
+          <div class="hero-actions"><a class="primary-button" href="#noncoding">查看非 coding 证据 ↓</a><a class="secondary-button" href="#problems">直接看 10 道原题</a></div>
         </div>
         <aside class="hero-verdict">
           <span>当前最诚实的结论</span>
-          <strong>选择性澄清 / 追加采样：值得扩大</strong>
-          <strong class="negative">读思维 / J 特异 / 直接部署：没有成立</strong>
+          <strong>语义对象 / 证据依赖：有机制证据</strong>
+          <strong class="negative">通用置信 / 读心：没有成立</strong>
           <dl>
-            <div><dt>澄清 balanced · base → J / raw</dt><dd>66.8% → 79.3% / 82.4%</dd></div>
-            <div><dt>coding pass · 1 条 → J 追加</dt><dd>9/16 → 11/16</dd></div>
-            <div><dt>J 25% quota 分支成本</dt><dd>34.4% of always‑8</dd></div>
-            <div><dt>固定 gate FPR 95% 上界</dt><dd>22.5% · STOP deploy</dd></div>
+            <div><dt>隐含实体 target top‑1</dt><dd>J 11/23 · raw 0/23</dd></div>
+            <div><dt>RAG 因果行定位</dt><dd>local gradient 36/36</dd></div>
+            <div><dt>跨风险 fixed J / raw AUC</dt><dd>0.807 / 0.853</dd></div>
+            <div><dt>可口头自省</dt><dd>0/12 top‑1 · 未通过</dd></div>
           </dl>
-          <p>J/raw/logit、随机 quota、never/always 和外部 verifier 全部同行比较；“有用”与“J 独有”是两个不同结论。</p>
+          <p>fixed J、local Jacobian、raw 与同谱 JQ 各自回答不同问题；页面不把它们混成一个“J-space 分数”。</p>
         </aside>
+      </section>
+
+      ${noncodingOverview(noncoding, atlas)}
+
+      <section class="coding-bridge" id="coding">
+        <span>CODING EVIDENCE ARCHIVE</span>
+        <h2>以下保留原有 coding 严格实验与 10 道原题</h2>
+        <p>非 coding 发现没有改写旧结论：coding 的单轨报警、分支排序、动作实验与全部限制继续按原始数据展示。</p>
       </section>
 
       <section class="metric-strip">
@@ -1415,6 +1665,22 @@ function render(findings, traces) {
     });
     if (count) count.textContent = `${visible} / ${problemItems.length} 道题`;
   });
+
+  const atlasTabs = [...document.querySelectorAll("[data-atlas-domain]")];
+  const atlasPanels = [...document.querySelectorAll("[data-atlas-panel]")];
+  atlasTabs.forEach((button) => {
+    button.addEventListener("click", () => {
+      const target = button.dataset.atlasDomain;
+      atlasTabs.forEach((item) => {
+        const selected = item.dataset.atlasDomain === target;
+        item.classList.toggle("active", selected);
+        item.setAttribute("aria-selected", String(selected));
+      });
+      atlasPanels.forEach((panel) => {
+        panel.hidden = panel.dataset.atlasPanel !== target;
+      });
+    });
+  });
 }
 
 
@@ -1427,8 +1693,21 @@ Promise.all([
     if (!response.ok) throw new Error(`problems HTTP ${response.status}`);
     return response.json();
   }),
+  fetch("data/noncoding_findings_dashboard.json", { cache: "no-store" }).then((response) => {
+    if (!response.ok) throw new Error(`noncoding HTTP ${response.status}`);
+    return response.json();
+  }),
+  fetch("data/causal_transport_atlas_dashboard.json", { cache: "no-store" }).then((response) => {
+    if (!response.ok) throw new Error(`atlas HTTP ${response.status}`);
+    return response.json();
+  }),
 ])
-  .then(([findings, raw]) => render(findings, Array.isArray(raw.traces) ? raw.traces : []))
+  .then(([findings, raw, noncoding, atlas]) => render(
+    findings,
+    Array.isArray(raw.traces) ? raw.traces : [],
+    noncoding,
+    atlas,
+  ))
   .catch((reason) => {
     app.innerHTML = `
       <main class="loading error">
