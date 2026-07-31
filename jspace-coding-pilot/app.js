@@ -300,6 +300,117 @@ function answerCard(number, question, verdict, tone, copy) {
 }
 
 
+function latestRoundPanel() {
+  const utilityRows = [
+    ["原模型 · never", 66.8, "ink"],
+    ["J gate", 79.3, "teal"],
+    ["raw gate", 82.4, "green"],
+    ["logit gate", 82.4, "violet"],
+    ["always 澄清", 50.0, "coral"],
+  ].map(([label, value, tone]) => `
+    <div class="latest-bar-row">
+      <span>${label}</span>
+      <i><b class="${tone}" style="width:${value}%"></b></i>
+      <strong>${value.toFixed(1)}%</strong>
+    </div>
+  `).join("");
+
+  const codingRows = [
+    ["只采样 1 条", "9 / 16", "12.5%", "56.2%"],
+    ["J · 升级 4 / 16 题", "11 / 16", "34.4%", "68.8%"],
+    ["J · 升级 8 / 16 题", "11 / 16", "56.3%", "68.8%"],
+    ["raw · 升级 8 / 16 题", "11 / 16", "56.3%", "68.8%"],
+    ["永远采样 8 条", "11 / 16", "100%", "68.8%"],
+  ].map(([policy, pass, cost, rate], index) => `
+    <div class="${index === 1 ? "latest-table-row focus" : "latest-table-row"}">
+      <strong>${policy}</strong><span>${pass}</span><span>${cost}</span><span>${rate}</span>
+    </div>
+  `).join("");
+
+  return `
+    <div class="latest-round">
+      <div class="action-pipeline" aria-label="从内部风险表征到系统动作">
+        <div><small>01 · OBSERVE</small><strong>prompt-end / t=256</strong><span>读取固定层内部状态</span></div>
+        <i>→</i>
+        <div><small>02 · SCORE</small><strong>J / raw / logit head</strong><span>预测信息不足或追加预算收益</span></div>
+        <i>→</i>
+        <div class="focus"><small>03 · ACT</small><strong>澄清 / 重试 / 升级</strong><span>动作价值由最终 utility 验证</span></div>
+        <i>→</i>
+        <div><small>04 · VERIFY</small><strong>tests / semantic eval</strong><span>风险分数不负责证明答案正确</span></div>
+      </div>
+
+      <div class="latest-verdict-grid">
+        <article class="latest-verdict positive">
+          ${tag("positive", "有效发现")}
+          <h3>内部信号可以驱动选择性动作</h3>
+          <p>固定 gate 在新面板上触发简短澄清后，balanced utility 从
+          <b>66.8%</b> 提升到 J 的 <b>79.3%</b>、raw/logit 的
+          <b>82.4%</b>；全拒答只有 <b>50.0%</b>。</p>
+        </article>
+        <article class="latest-verdict positive">
+          ${tag("positive", "值得扩大")}
+          <h3>coding 可按风险追加采样</h3>
+          <p>新 16 题中，第一条通过 9 题、8 条最多通过 11 题。J 在预声明
+          25% quota 中只升级 4 题便找到两道可救题，以 34.4% 分支成本达到
+          always-8 的 11/16。</p>
+        </article>
+        <article class="latest-verdict negative">
+          ${tag("negative", "没有成立")}
+          <h3>这些都不是 J-space 独有收益</h3>
+          <p>外部门控 raw/logit ≥ J；coding 50% 主终点 J/raw/random 都是
+          11/16。固定线性 J head 还能精确折叠回 raw hidden-state 方向。</p>
+        </article>
+        <article class="latest-verdict caution">
+          ${tag("candidate", "证据边界")}
+          <h3>现在仍不能直接部署</h3>
+          <p>门控只有 32 个 complete，3 次误拦对应 FPR 单侧 95% 上界
+          22.5%；coding 只有 2 道真正可救题。两项都需要更大的冻结复制。</p>
+        </article>
+      </div>
+
+      <div class="latest-data-grid">
+        <article class="latest-data-card">
+          <header><div><span>ANSWER / CLARIFY</span><h3>固定 gate 的最终行为效用</h3></div>${tag("candidate", "事后 utility join")}</header>
+          <p>保守语义评分；分数越高，越能同时保留完整题回答并避免信息不足时硬猜。</p>
+          <div class="latest-bars">${utilityRows}</div>
+          <footer>严格迁移计数：J 为 FP 3/32、TP 23/32；raw/logit 均为
+          FP 3/32、TP 25/32。阈值在新面板修改次数为 0。</footer>
+        </article>
+
+        <article class="latest-data-card">
+          <header><div><span>PASS / COST</span><h3>coding 两阶段追加采样</h3></div>${tag("positive", "新 16 题")}</header>
+          <p>成本列是相对 always-sample-8 的候选分支数；最终正确性仍由
+          EvalPlus verifier 判定。</p>
+          <div class="latest-table">
+            <div class="latest-table-head"><span>策略</span><span>通过</span><span>分支成本</span><span>pass</span></div>
+            ${codingRows}
+          </div>
+          <footer>冻结 50% 主终点允许继续研究 two-stage escalation，但
+          J−raw pass = 0（exact score-swap p=1.0）。25% 是预声明成本曲线，
+          只有 2 个 positive event，不能当作 J 特异确认。</footer>
+        </article>
+      </div>
+
+      <div class="latest-training-note">
+        <div>
+          <span>TRAINING AUDIT</span>
+          <h3>LoRA 教会的是训练话术，还是选择性“知道不知道”？</h3>
+        </div>
+        <p><b>v1：</b>单一长拒答 target 占 high-risk 输出的 70.7%，完整题也大量逐字拒答——这是模板过拟合。</p>
+        <p><b>v2：</b>短 target 与 per-example loss 将 complete 提高 9.4–18.8pp；但 high-risk 的 balanced 仍比 random 低 1.2pp，且 J-high 与 raw-high 在 12/12 family 完全相同。</p>
+      </div>
+
+      <div class="latest-plain-answer">
+        <strong>所以，“什么时候跑偏”和 J-space 的关系到底是什么？</strong>
+        <p>当前不能从 J-space 里的几个词指出某个 token 是错误起点。可用的关系是：
+        在预先固定的决策点，用整个连续向量训练一个风险 head，预测“现在继续硬答会不会不合适”
+        或“追加采样有没有机会救回”；然后用真实行为效用和 verifier 检验这个动作，而不是解释关键词。</p>
+      </div>
+    </div>
+  `;
+}
+
+
 function explorationPanel(explore) {
   const spectral = explore?.spectral_subspace || {};
   const format = explore?.format_confound || {};
@@ -1114,32 +1225,33 @@ function render(findings, traces) {
     <main>
       <header class="topbar">
         <a href="#top" class="brand"><span>J</span><div><strong>J-space × Reliability</strong><small>coding · answerability · dialogue</small></div></a>
-        <nav><a href="#answer">结论</a><a href="#evidence">证据</a><a href="#explore">新发现</a><a href="#retry">重试</a><a href="#problems">10 道原题</a><a href="#method">方法</a></nav>
+        <nav><a href="#answer">结论</a><a href="#latest">最新动作实验</a><a href="#evidence">证据</a><a href="#explore">完整探索</a><a href="#problems">10 道原题</a></nav>
         <span class="public-chip">公开访问 · 无需登录</span>
       </header>
 
       <section class="hero" id="top">
         <div class="hero-copy">
           <p class="eyebrow">STRICT EXACT-PREFIX · UPDATED 2026-07-31</p>
-          <h1>J-space 还不能告诉我们<br><em>“这条轨迹从此刻开始错了”</em></h1>
+          <h1>不能读出“哪一刻犯错”，<br>但可以探索<em>“何时采取动作”</em></h1>
           <p class="hero-lead">
-            模型内部确实能读出“输入是否足够”等任务特定风险，但独立验证显示：
-            旧域阈值在新问题上误拦一半完整输入，20 道新 coding 题上的 J
-            selector 也没有胜过 raw 或随机。几个可读关键词更不是完整思维。
+            最终结果不是把几个 J-space 关键词当成模型思维，而是在固定决策点把
+            连续内部表征用于澄清或追加采样。两类动作都有正向 utility，但
+            raw/logit 与 J 持平或更好，因此成立的是 latent risk routing，
+            不是 J-space 独有的“自知”。
           </p>
-          <div class="hero-actions"><a class="primary-button" href="#answer">先看三个答案 ↓</a><a class="secondary-button" href="#problems">直接看 10 道原题</a></div>
+          <div class="hero-actions"><a class="primary-button" href="#latest">先看最终有效发现 ↓</a><a class="secondary-button" href="#problems">直接看 10 道原题</a></div>
         </div>
         <aside class="hero-verdict">
           <span>当前最诚实的结论</span>
-          <strong>任务特定表征：确实存在</strong>
-          <strong class="negative">J 特异控制 / 部署：没有成立</strong>
+          <strong>选择性澄清 / 追加采样：值得扩大</strong>
+          <strong class="negative">读思维 / J 特异 / 直接部署：没有成立</strong>
           <dl>
-            <div><dt>新域 gate 完整题误拦</dt><dd>${pct(finalGate.primary?.J?.false_positive_rate)}</dd></div>
-            <div><dt>coding top‑4 · J / raw / random</dt><dd>${pct(finalCoding.selected_pass?.J?.top4)} / ${pct(finalCoding.selected_pass?.raw?.top4)} / ${pct(finalCoding.selected_pass?.random?.top4)}</dd></div>
-            <div><dt>OOD official JQ rank</dt><dd>${finalExplore.ood_random_alignment_control?.official_rank?.brier?.official_best_first_rank_among_257}/257</dd></div>
-            <div><dt>coding 开发集保谱随机 p</dt><dd>p=${fmt(random256?.rank_p, 4)}</dd></div>
+            <div><dt>澄清 balanced · base → J / raw</dt><dd>66.8% → 79.3% / 82.4%</dd></div>
+            <div><dt>coding pass · 1 条 → J 追加</dt><dd>9/16 → 11/16</dd></div>
+            <div><dt>J 25% quota 分支成本</dt><dd>34.4% of always‑8</dd></div>
+            <div><dt>固定 gate FPR 95% 上界</dt><dd>22.5% · STOP deploy</dd></div>
           </dl>
-          <p>新结论分别来自 256 个同谱随机对照、16 个新 answerability family 和 20×8 条新 coding 轨迹。</p>
+          <p>J/raw/logit、随机 quota、never/always 和外部 verifier 全部同行比较；“有用”与“J 独有”是两个不同结论。</p>
         </aside>
       </section>
 
@@ -1167,8 +1279,13 @@ function render(findings, traces) {
         <p class="relation-note">这里的关系不是“J-space 发现某个关键词 → 宣判错误”，而是训练一个只在同题兄弟分支间比较的 held-out-task ranker；这个开发集候选随后在 20 道新题上没有胜过 raw 或随机。若只生成一条轨迹，更没有当前证据支持报警。</p>
       </section>
 
+      <section class="content-section section-latest" id="latest">
+        ${sectionTitle("02", "ACTIONABLE ROUND · FINAL", "从看几个关键词，走到可检验的系统动作", "两类最终实验都不再解释某个 J-space 词，而是预先冻结一个动作：信息不足时澄清，coding 可能被救回时追加采样。")}
+        ${latestRoundPanel()}
+      </section>
+
       <section class="content-section section-tinted" id="evidence">
-        ${sectionTitle("02", "时间 × 表征", "为什么不能把 256 token 叫作“跑偏起点”？", "若真存在通用 onset，我们希望风险随时间稳定上升，且同一个评分方向能跨 checkpoint 工作。实际看到的是一个孤立的时间 pocket。")}
+        ${sectionTitle("03", "时间 × 表征", "为什么不能把 256 token 叫作“跑偏起点”？", "若真存在通用 onset，我们希望风险随时间稳定上升，且同一个评分方向能跨 checkpoint 工作。实际看到的是一个孤立的时间 pocket。")}
         ${brierChart(findings.paired_timeline)}
         <div class="evidence-callouts">
           <article>${tag("candidate", "事后候选")}<h3>t=256 的局部对照通过，但还不是确认性结果</h3><p>固定 C 后，999 次 task 内标签置换，J−raw p=${fmt(findings.label_permutation_at_256.J_minus_raw_p, 4)}。100 个保持 J 奇异谱、随机输入方向的 JQ 对照中，${random256?.random_better_count}/${random256?.random_count} 个优于官方 J，秩检验 p=${fmt(random256?.rank_p, 4)}。这两项都没有覆盖先查看 10 个 offset 再选 256 的完整发现过程。</p></article>
@@ -1235,12 +1352,12 @@ function render(findings, traces) {
       </section>
 
       <section class="content-section" id="explore">
-        ${sectionTitle("03", "DIVERGENT EXPLORATION · ROUND 2", "把几个关键词之外的方向都试一遍，真正留下什么？", "以下 22 项都从实验 artifact 自动抽取。重点不是再制造一个好看的分数，而是区分机制、混淆、跨时间泛化、无标签选择、部署成本和真实 retry 效果。")}
+        ${sectionTitle("04", "DIVERGENT EXPLORATION · ROUND 2", "把几个关键词之外的方向都试一遍，真正留下什么？", "以下 22 项都从实验 artifact 自动抽取。重点不是再制造一个好看的分数，而是区分机制、混淆、跨时间泛化、无标签选择、部署成本和真实 retry 效果。")}
         ${explorationPanel(findings.exploration_v2)}
       </section>
 
       <section class="content-section" id="retry">
-        ${sectionTitle("04", "从分析走向行动", "为什么当前不该让 J-space 自动重试？", "开发集上的“先并行、后相对筛选”候选已经完成 20 道新题验证，J 没有胜过 raw 或随机；单条输出的 J Δ 报警同样没有证据。")}
+        ${sectionTitle("05", "从分析走向行动", "旧 selector 为什么失败，新 escalation 为什么值得继续？", "事后排序已经生成的 8 条候选没有胜过 baseline；新实验把目标改成更早的 task-level 预算分配，并在 16 道全新题上得到可扩大但非 J-specific 的正结果。")}
         ${selectionPanel(findings.selection)}
         <div class="retry-design">
           <article><span>01 · POOL</span><h3>先问候选池有没有正确答案</h3><p>新面板 8/20 题八条全错；排序器无法创造不存在的正确分支，answerability 与排序必须拆开。</p></article>
@@ -1252,12 +1369,12 @@ function render(findings, traces) {
       </section>
 
       <section class="content-section section-dark" id="problems">
-        ${sectionTitle("05", "RAW EVIDENCE", "10 道原题与完整保存的失败采样", "这里展示模型实际收到的原始题面/测试，以及逐字符串保存的原始响应；其中 3 条命中 3072-token 生成上限。可以直接核对每题，不需要依赖我们对关键词的解释。")}
+        ${sectionTitle("06", "RAW EVIDENCE", "10 道原题与完整保存的失败采样", "这里展示模型实际收到的原始题面/测试，以及逐字符串保存的原始响应；其中 3 条命中 3072-token 生成上限。可以直接核对每题，不需要依赖我们对关键词的解释。")}
         ${problemArchive(traces)}
       </section>
 
       <section class="content-section" id="method">
-        ${sectionTitle("06", "CLAIM BOUNDARY", "严格做到什么，仍然缺什么", "这是一轮 10 题 pilot。它的价值是排除错误方向并冻结下一轮实验，不是给出部署结论。")}
+        ${sectionTitle("07", "CLAIM BOUNDARY", "严格做到什么，仍然缺什么", "完整探索包含 10 题可视化 pilot、20 题 selector、16 题 two-stage coding、五/六两批 answerability family 与两轮 LoRA；正结果仍需更大复制，不是部署授权。")}
         <div class="method-grid">
           <article class="method-card can"><h3>本轮已经控制</h3><ul>
             <li>每个轨迹 × checkpoint 单独 exact-prefix forward。</li>
