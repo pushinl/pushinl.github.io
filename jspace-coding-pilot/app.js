@@ -387,7 +387,8 @@ function latestRoundPanel() {
           </div>
           <footer>冻结 50% 主终点允许继续研究 two-stage escalation，但
           J−raw pass = 0（exact score-swap p=1.0）。25% 是预声明成本曲线，
-          只有 2 个 positive event，不能当作 J 特异确认。</footer>
+          随机同时命中 2 个 positive event 的精确概率为 0.05；J 对 raw/logit
+          的 paired p 仍为 0.75/0.5602，不能当作 J 特异确认。</footer>
         </article>
       </div>
 
