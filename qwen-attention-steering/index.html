@@ -624,6 +624,7 @@ SOFTWARE.
   <p class="focus-key">生成时真正用到的是<strong>位置标记</strong>。评分头的 0.9 不会直接变成 90% 的 attention。</p>
   <p class="focus-key"><strong>“匹配分”是什么？</strong>生成中的模型会计算：当前这一步与每个历史 token 有多相关。这些分数转成比例，才是 attention 权重；它们与评分头的“重要性分数”是两种不同的数。</p>
   <a class="animation-link" href="animation.html">▶ 用动画看完整流程：训练 → 评分 → 选块 → 推理 → 工具回传 ↗</a>
+  <a class="animation-link" href="request-timeline.html">▶ 单独看：评分什么时候触发，为什么下一次请求要重评 ↗</a>
 </section>
 
 <section class="model-structure reader-width" id="model-structure">
