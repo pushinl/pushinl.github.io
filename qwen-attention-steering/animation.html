@@ -38,7 +38,7 @@ header{border-bottom:1px solid #45645d;min-height:64px;display:flex;align-items:
 <div class="seek-wrap"><label class="sr-only" for="seek">动画进度</label><input id="seek" type="range" min="0" max="41999" step="1" value="0" aria-label="拖动动画进度"></div>
 <nav class="chapter-dots" id="chapters" aria-label="跳转动画画面"></nav>
 </section>
-<div class="below"><p>画面中的四块内容、教师标签、分数和 attention 数值用于说明计算过程；不是模型实测。真实服务记录在主页面，包含 171 块评分与经核对的原文节选。</p><a href="index.html#score-visualization">查看真实评分 ↗</a></div>
+<div class="below"><p>画面中的任务内容、教师标签、分数和 attention 数值用于说明计算过程；不是模型实测。真实服务记录在主页面，包含 171 块评分与经核对的原文节选。</p><a href="index.html#score-visualization">查看真实评分 ↗</a></div>
 </main>
 <script>
 (function(){
@@ -47,7 +47,7 @@ const canvas=document.getElementById('demo'),g=canvas.getContext('2d');
 const W=1000,H=560,DURATION=6000,TOTAL=DURATION*7;
 const C={bg:'#0c2022',panel:'#153638',panel2:'#1b4545',line:'#4d7b69',muted:'#a9c7b8',white:'#edf9e9',green:'#93e4b1',bright:'#56d6a0',gold:'#f0bf74',faint:'#274d48',low:'#738b85'};
 const names=['报错与目标','无关日志','相关源码','测试结果'];
-const scores=[.84,.12,.77,.69],nextScores=[.58,.10,.44,.90],labels=[1,0,1,1];
+const scores=[.84,.12,.77,.69],nextScores=[.58,.10,.44,.90,.92],labels=[1,0,1,1];
 const chapters=[
  ['任务进入前文','问题、日志、源码与测试结果进入 Agent 当前可见的历史。'],
  ['教师标注','训练时，教师给历史块标重要 / 不重要；部署后不再调用教师。'],
@@ -55,7 +55,7 @@ const chapters=[
  ['请求开始：先评分','当前完整前文先跑一遍，评分头给每个 256-token 块一个分数。'],
  ['从分数选位置','过 0.5 门槛并进入前 12 名的块，展开为 token 位置标记。'],
  ['生成：B 与 C 的 attention','接着上一幕：B 得 0.12、未选中；C 得 0.77、已选中。当前 Q 算出匹配分，只给 C 加 1，再经 softmax 变成 attention 比例。'],
- ['工具回传：重新评分','工具结果进入下一次请求后，评分头重新看前文，分数与选区可以改变。']
+ ['工具回传：下一轮重评分','客户端把上一轮 assistant 生成的 tool_use 和匹配的 tool_result 一起带入下一次请求。评分头对更新后的完整历史重新打分、选位置，下一轮生成再使用新选区。']
 ];
 let ms=0,last=0,playing=!matchMedia('(prefers-reduced-motion: reduce)').matches,chapter=-1;
 const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
@@ -105,7 +105,60 @@ function drawAttention(u){
  text('B  '+(bWeight*100).toFixed(1)+'%',128,525,14,C.gold,true);
  text('C  '+(cWeight*100).toFixed(1)+'%',872,525,14,C.green,true,'right');
 }
-function drawTool(u){title('07  /  工具结果进入下一次请求');for(let i=0;i<4;i++)block(56+i*235,89,i,{selected:labels[i]});let arrive=ease(clamp((u-.05)*1.9)),x=lerp(65,405,arrive);box(x,279,210,69,C.panel2,C.gold);text('新工具结果',x+20,313,18,C.white,true);line(286,314,684,314,C.gold,2,.7,[5,7]);particle(286,314,684,314,u,C.gold,5);box(694,269,215,89,C.panel2,C.green);text('重新运行评分头',802,314,17,C.white,true,'center');let p=ease(clamp((u-.2)*1.6));for(let i=0;i<4;i++){let val=lerp(scores[i],nextScores[i],p),bx=91+i*230;box(bx,402,165,79,val>=.5?'#214d3c':C.panel,val>=.5?C.green:C.line);text('ABCD'[i]+'  '+val.toFixed(2),bx+14,427,17,val>=.5?C.green:C.muted,true);box(bx+14,448,137,8,C.faint,null,4);box(bx+14,448,137*val,8,val>=.5?C.green:C.low,null,4)}text('分数与选区可以改变',500,519,15,C.muted,true,'center')}
+function drawTool(u){
+ title('07  /  下一轮：新 token 和工具结果进入重评分');
+ let result=ease(clamp((u-.16)*5)),history=ease(clamp((u-.35)*5));
+ let score=ease(clamp((u-.53)*5)),next=ease(clamp((u-.73)*5));
+ // The assistant's generated tool call becomes visible history only when the client sends it back.
+ box(56,94,413,100,C.panel2,C.gold);
+ text('① 上一轮新生成的 token',77,120,14,C.gold,true);
+ text('组成 tool_use：运行 pytest',77,158,17,C.white,true);
+ line(470,145,530,145,C.gold,2,result);
+ if(result>.04)particle(470,145,530,145,u,C.gold,4);
+ box(531,94,413,100,C.panel2,C.green,12,.25+.75*result);
+ g.save();g.globalAlpha=result;
+ text('② 客户端执行工具',552,120,14,C.green,true);
+ text('tool_result：2 个测试失败',552,158,17,C.white,true);
+ g.restore();
+ line(254,194,466,279,C.gold,2,history);
+ line(746,194,774,279,C.green,2,history);
+ if(history>.04){particle(254,194,466,279,u,C.gold,4);particle(746,194,774,279,u,C.green,4,.4)}
+ box(56,232,888,111,C.panel,C.line);
+ text('③ 下一次请求的完整历史  Hᵣ₊₁',77,255,14,C.white,true);
+ box(76,279,232,43,C.panel2,C.line,7);
+ text('旧历史 A–D',192,300,15,C.muted,true,'center');
+ box(325,279,282,43,C.panel2,C.gold,7,.2+.8*history);
+ box(624,279,300,43,C.panel2,C.green,7,.2+.8*history);
+ g.save();g.globalAlpha=history;
+ text('刚生成的 tool_use token',466,300,14,C.gold,true,'center');
+ text('新回传的 tool_result token',774,300,14,C.green,true,'center');
+ g.restore();
+ line(500,344,500,365,C.green,2,score);
+ text('全部输入重新按 256 token 分块',500,365,12,C.muted,false,'center');
+ box(56,390,225,91,C.panel2,C.bright,12,.2+.8*score);
+ box(348,390,320,91,C.panel2,C.line,12,.2+.8*score);
+ box(735,390,209,91,C.panel2,C.green,12,.2+.8*next);
+ line(281,436,348,436,C.green,2,score);
+ line(668,436,735,436,C.green,2,next);
+ if(score>.04)particle(281,436,348,436,u,C.green,4,.2);
+ if(next>.04)particle(668,436,735,436,u,C.green,4,.5);
+ g.save();g.globalAlpha=score;
+ text('④ 评分头再看全历史',74,415,15,C.white,true);
+ text('含刚生成的 token',74,452,13,C.green,true);
+ text('⑤ 新分数（示意）',366,412,14,C.white,true);
+ text('C '+scores[2].toFixed(2)+'→'+nextScores[2].toFixed(2)+'   D '+scores[3].toFixed(2)+'→'+nextScores[3].toFixed(2),366,441,15,C.muted,true);
+ text('新增尾块 E（含新内容） '+nextScores[4].toFixed(2),366,464,13,C.green,true);
+ g.restore();
+ g.save();g.globalAlpha=next;
+ text('⑥ 新选区',753,414,15,C.white,true);
+ text('A、D、E → m=1',753,451,15,C.green,true);
+ g.restore();
+ line(839,481,815,506,C.green,2,next);
+ box(228,506,598,35,'#204f3b',C.bright,18,next);
+ g.save();g.globalAlpha=next;
+ text('下一轮生成：按新选区调整 attention',527,524,14,C.green,true,'center');
+ g.restore();
+}
 const scenes=[drawStream,drawTeacher,drawTrain,drawScore,drawSelect,drawAttention,drawTool];
 function matchReadout(u){
  let mix=(1-Math.cos(u*Math.PI*4))*.5;
