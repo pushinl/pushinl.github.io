@@ -54,7 +54,7 @@ const chapters=[
  ['训练评分头','主模型隐藏状态送入小评分头，预测分数逐步接近教师标签。'],
  ['请求开始：先评分','当前完整前文先跑一遍，评分头给每个 256-token 块一个分数。'],
  ['从分数选位置','过 0.5 门槛并进入前 12 名的块，展开为 token 位置标记。'],
- ['生成：改变 attention','每一步 Q·K 与 softmax 都在变；本次请求的选区与 +1 偏置保持固定。'],
+ ['生成：B 与 C 的 attention','接着上一幕：B 得 0.12、未选中；C 得 0.77、已选中。当前 Q 算出匹配分，只给 C 加 1，再经 softmax 变成 attention 比例。'],
  ['工具回传：重新评分','工具结果进入下一次请求后，评分头重新看前文，分数与选区可以改变。']
 ];
 let ms=0,last=0,playing=!matchMedia('(prefers-reduced-motion: reduce)').matches,chapter=-1;
@@ -76,13 +76,48 @@ function drawTeacher(u){title('02  /  训练数据：教师标注');box(390,95,2
 function vector(x,y,color){for(let i=0;i<9;i++){let h=14+((i*17+11)%29);box(x+i*14,y+44-h,8,h,color,null,2)}}
 function drawTrain(u){title('03  /  从教师标签学习评分头');box(56,130,228,254,C.panel,C.line);text('主模型隐藏状态',77,162,18,C.white,true);text('末尾位置',77,215,11,C.muted);vector(78,232,C.gold);text('块内均值',77,305,11,C.muted);vector(78,322,C.green);line(286,251,374,251,C.green,2);line(286,331,374,331,C.gold,2);particle(286,251,374,251,u,C.green,4);particle(286,331,374,331,u,C.gold,4,.4);box(376,158,248,208,C.panel2,C.bright);text('重要性评分头',500,191,19,C.white,true,'center');text('q  ↔  k',500,250,28,C.green,true,'center');text('相似度 + 位置修正',500,307,13,C.muted,false,'center');line(626,265,699,265,C.green,2);particle(626,265,699,265,u,C.gold,5);box(703,129,240,257,C.panel,C.line);text('预测分数 → 教师标签',723,163,13,C.white,true);for(let i=0;i<4;i++){let y=207+i*42,p=lerp([.48,.53,.38,.44][i],scores[i],ease(u));text('ABCD'[i],726,y,12,C.muted,true);box(753,y-5,119,11,C.faint,null,5);box(753,y-5,119*p,11,i===1?C.low:C.green,null,5);text(p.toFixed(2),918,y,12,i===1?C.muted:C.green,true,'right')}pill('误差减小',423,420,156,C.gold)}
 function scoreBars(values,selected,u,opt={}){let x0=opt.x||75,yBase=opt.yBase||365,space=opt.space||230,maxH=opt.maxH||205,thresholdY=yBase-maxH*.5;line(x0-20,thresholdY,x0+space*3+155,thresholdY,C.gold,1,.8,[6,5]);text('0.5',x0-27,thresholdY-11,10,C.gold,true,'right');for(let i=0;i<4;i++){let x=x0+i*space,h=maxH*values[i]*ease(clamp(u*2.1));box(x,yBase-h,120,h,selected&&selected[i]?C.bright:i===1?C.low:C.gold,null,5);text('ABCD'[i],x+60,yBase+25,16,C.white,true,'center');text(values[i].toFixed(2),x+60,yBase-h-14,15,selected&&selected[i]?C.green:C.white,true,'center')}}
-function drawScore(u){title('04  /  在线推理：第一遍完整读前文');for(let i=0;i<4;i++)block(55+i*235,91,i);box(105,293,200,84,C.panel2,C.green);text('主模型',205,335,21,C.white,true,'center');box(392,293,200,84,C.panel2,C.bright);text('评分头',492,335,21,C.white,true,'center');line(305,335,389,335,C.green,2);line(592,335,685,335,C.green,2);particle(305,335,389,335,u,C.green,5);particle(592,335,685,335,u,C.gold,5,.3);box(684,271,256,125,C.panel,C.line);text('A  .84     B  .12',705,310,17,C.green,true);text('C  .77     D  .69',705,351,17,C.green,true);text('每块一个重要性分数',503,477,18,C.muted,true,'center')}
+function drawScore(u){title('04  /  在线推理：第一遍完整读前文');for(let i=0;i<4;i++)block(55+i*235,91,i);box(105,293,200,84,C.panel2,C.green);text('主模型',205,335,21,C.white,true,'center');box(392,293,200,84,C.panel2,C.bright);text('评分头',492,335,21,C.white,true,'center');line(305,335,389,335,C.green,2);line(592,335,685,335,C.green,2);particle(305,335,389,335,u,C.green,5);particle(592,335,685,335,u,C.gold,5,.3);box(684,271,256,125,C.panel,C.line);text('A  0.84    B  0.12',701,310,16,C.green,true);text('C  0.77    D  0.69',701,351,16,C.green,true);text('每块一个重要性分数',503,477,18,C.muted,true,'center')}
 function tokenStrip(x,y,selected){for(let j=0;j<16;j++){box(x+j*10,y,7,14,selected?C.bright:C.low,null,2,selected?.9:.35)}}
 function drawSelect(u){title('05  /  阈值 → 选中标记 → token 位置');scoreBars(scores,[true,false,true,true],u,{x:88,yBase:309,space:230,maxH:185});for(let i=0;i<4;i++){let x=74+i*230;line(x+74,340,x+74,389,labels[i]?C.green:C.low,1.5,clamp((u-.25)*3));box(x,390,165,72,labels[i]?'#204f3b':C.panel,labels[i]?C.bright:C.low);text(labels[i]?'m = 1':'m = 0',x+82,410,14,labels[i]?C.green:C.muted,true,'center');tokenStrip(x+4,434,!!labels[i])}pill('整块 256 个位置共用标记',350,494,300,C.green)}
-function drawAttention(u){title('06  /  第二遍：Q·K 之后加偏置，再 softmax');let mix=(1-Math.cos(u*Math.PI*4))*.5,aRaw=.5*mix,bRaw=-.5*mix,aLog=aRaw,bLog=bRaw+1,bWeight=Math.exp(bLog)/(Math.exp(aLog)+Math.exp(bLog)),aWeight=1-bWeight;box(397,90,206,64,C.panel2,C.gold);text('当前 query  Qₜ',500,122,18,C.white,true,'center');let ax=242,bx=758,y=298;line(500,154,ax,y,C.gold,3+14*aWeight,.14+aWeight*.65);line(500,154,bx,y,C.green,3+14*bWeight,.14+bWeight*.65);particle(500,154,ax,y,u,C.gold,6,.1);particle(500,154,bx,y,u,C.green,6,.5);box(98,260,285,106,C.panel,C.gold);box(617,260,285,106,'#245641',C.bright);text('未选中历史位置',240,286,16,C.white,true,'center');text('m = 0',240,329,18,C.gold,true,'center');text('已选中历史位置',759,286,16,C.white,true,'center');text('m = 1  →  匹配分 +1',759,329,18,C.green,true,'center');box(105,414,790,91,C.panel,C.line);text('softmax 后的 attention 合计',128,442,12,C.muted,true);let barX=128,barY=462,barW=744;box(barX,barY,barW,21,C.faint,null,10);box(barX,barY,barW*aWeight,21,C.gold,null,10);box(barX+barW*aWeight,barY,barW*bWeight,21,C.bright,null,10);text('未选中 '+(aWeight*100).toFixed(1)+'%',128,525,14,C.gold,true);text('已选中 '+(bWeight*100).toFixed(1)+'%',872,525,14,C.green,true,'right');pill('选区固定',755,88,125,C.green)}
+function drawAttention(u){
+ title('06  /  承接选块：B 不加分，C 加 1');
+ let mix=(1-Math.cos(u*Math.PI*4))*.5;
+ let bRaw=.5*mix,cRaw=-.5*mix,bLog=bRaw,cLog=cRaw+1;
+ let cWeight=Math.exp(cLog)/(Math.exp(bLog)+Math.exp(cLog)),bWeight=1-cWeight;
+ box(397,139,206,58,C.panel2,C.gold);
+ text('当前 query  Qₜ',500,168,18,C.white,true,'center');
+ line(500,197,242,280,C.gold,3+14*bWeight,.14+bWeight*.65);
+ line(500,197,758,280,C.green,3+14*cWeight,.14+cWeight*.65);
+ particle(500,197,242,280,u,C.gold,6,.1);
+ particle(500,197,758,280,u,C.green,6,.5);
+ box(98,280,285,97,C.panel,C.gold);
+ box(617,280,285,97,'#245641',C.bright);
+ text('块 B · 256 token',240,306,17,C.white,true,'center');
+ text('重要性 0.12 → m = 0',240,345,16,C.gold,true,'center');
+ text('块 C · 256 token',759,306,17,C.white,true,'center');
+ text('重要性 0.77 → m = 1',759,345,16,C.green,true,'center');
+ box(105,418,790,86,C.panel,C.line);
+ text('softmax：最终匹配分 → attention 比例',128,442,13,C.muted,true);
+ let barX=128,barY=465,barW=744;
+ box(barX,barY,barW,21,C.faint,null,10);
+ box(barX,barY,barW*bWeight,21,C.gold,null,10);
+ box(barX+barW*bWeight,barY,barW*cWeight,21,C.bright,null,10);
+ text('B  '+(bWeight*100).toFixed(1)+'%',128,525,14,C.gold,true);
+ text('C  '+(cWeight*100).toFixed(1)+'%',872,525,14,C.green,true,'right');
+}
 function drawTool(u){title('07  /  工具结果进入下一次请求');for(let i=0;i<4;i++)block(56+i*235,89,i,{selected:labels[i]});let arrive=ease(clamp((u-.05)*1.9)),x=lerp(65,405,arrive);box(x,279,210,69,C.panel2,C.gold);text('新工具结果',x+20,313,18,C.white,true);line(286,314,684,314,C.gold,2,.7,[5,7]);particle(286,314,684,314,u,C.gold,5);box(694,269,215,89,C.panel2,C.green);text('重新运行评分头',802,314,17,C.white,true,'center');let p=ease(clamp((u-.2)*1.6));for(let i=0;i<4;i++){let val=lerp(scores[i],nextScores[i],p),bx=91+i*230;box(bx,402,165,79,val>=.5?'#214d3c':C.panel,val>=.5?C.green:C.line);text('ABCD'[i]+'  '+val.toFixed(2),bx+14,427,17,val>=.5?C.green:C.muted,true);box(bx+14,448,137,8,C.faint,null,4);box(bx+14,448,137*val,8,val>=.5?C.green:C.low,null,4)}text('分数与选区可以改变',500,519,15,C.muted,true,'center')}
 const scenes=[drawStream,drawTeacher,drawTrain,drawScore,drawSelect,drawAttention,drawTool];
-function matchReadout(u){let mix=(1-Math.cos(u*Math.PI*4))*.5,aRaw=.5*mix,bRaw=-.5*mix,bWeight=Math.exp(bRaw+1)/(Math.exp(aRaw)+Math.exp(bRaw+1));box(191,188,190,36,C.panel,C.gold,7);box(619,188,190,36,C.panel,C.green,7);text('Q·K = '+aRaw.toFixed(2),286,206,14,C.gold,true,'center');text('Q·K = '+bRaw.toFixed(2)+'  +1',714,206,14,C.green,true,'center');text('对照：两组各 256 个位置',500,390,12,C.muted,false,'center');return [1-bWeight,bWeight]}
+function matchReadout(u){
+ let mix=(1-Math.cos(u*Math.PI*4))*.5;
+ let bRaw=.5*mix,cRaw=-.5*mix,cWeight=Math.exp(cRaw+1)/(Math.exp(bRaw)+Math.exp(cRaw+1));
+ text('上一幕选出的标记，决定这里加不加 1',500,105,13,C.muted,true,'center');
+ box(137,216,260,44,C.panel,C.gold,7);
+ box(603,216,260,44,C.panel,C.green,7);
+ text('Q·K '+bRaw.toFixed(2)+'  + 0 = '+bRaw.toFixed(2),267,238,15,C.gold,true,'center');
+ text('Q·K '+cRaw.toFixed(2)+'  + 1 = '+(cRaw+1).toFixed(2),733,238,15,C.green,true,'center');
+ text('只取 B、C 两块作演示；生成下一个 token 时 Q 会变，标记不变',500,397,12,C.muted,false,'center');
+ return [1-cWeight,cWeight]
+}
 function render(){let idx=Math.min(6,Math.floor(ms/DURATION)),u=clamp((ms-idx*DURATION)/DURATION);g.clearRect(0,0,W,H);base();scenes[idx](u);let attentionWeights=idx===5?matchReadout(u):null;if(idx!==chapter){chapter=idx;document.getElementById('chapter').textContent=String(idx+1).padStart(2,'0')+' / 07';document.getElementById('title').textContent=chapters[idx][0];document.getElementById('caption').textContent=chapters[idx][1];[].forEach.call(document.querySelectorAll('#chapters button'),(b,j)=>b.classList.toggle('active',j===idx))}document.getElementById('seek').value=Math.floor(ms);document.getElementById('time').textContent='00:'+String(Math.floor(ms/1000)).padStart(2,'0')+' / 00:42';document.getElementById('previous').disabled=idx===0;document.getElementById('next').disabled=idx===6;window.DemoState={chapter:idx,phase:u,playing,attentionSelectedMask:[1,0,1,1],attentionWeights}}
 function setPlay(v){playing=v;document.getElementById('play').textContent=v?'Ⅱ 暂停':'▶ 播放';document.getElementById('play').setAttribute('aria-label',v?'暂停动画':'播放动画');last=0}
 function seek(value){ms=clamp(Number(value),0,TOTAL-1);render()}
