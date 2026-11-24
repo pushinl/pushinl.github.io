@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="用四步读懂重要性评分头怎样参与已部署 Qwen 的推理：选历史位置、增加 attention 匹配分、改变信息汇总、影响后续生成。训练、公式和代码按需展开。">
+  <meta name="description" content="用同一组历史位置追踪评分头得分怎样变成选中标记，再怎样在推理时为 attention 匹配分加偏置。可改变分数，观察选区和最终权重是否变化。">
   <meta name="theme-color" content="#f6f5f0">
-  <title>Attention Steering — 让关键证据参与更多生成</title>
+  <title>Attention Steering — 评分头怎样改变 attention 权重</title>
   <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByeD0iMTIiIGZpbGw9IiMxNDMzM2IiLz48cGF0aCBkPSJNMTIgMzJWMjJNMjQgMzJWMTJNMzYgMzJWMTgiIHN0cm9rZT0iI2Q4YWU1OSIgc3Ryb2tlLXdpZHRoPSI1IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4K" type="image/svg+xml">
   <style>
 /* KaTeX 0.19.1
@@ -210,76 +210,140 @@ SOFTWARE.
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{transition:none!important;animation:none!important}}
 @media print{.reader-width{width:100%}.reader-hero{padding-top:15px}.reader-section{padding:25px 0}.reader-switch,.reader-start{display:none}.reader-appendix{break-inside:auto}.reader-appendix>summary{break-after:avoid}.reader-reference{padding:0 10px}.reader-band{print-color-adjust:exact}}
 
+/* Follow one set of history positions from the scoring head into attention. */
+.focus-intro{padding:58px 0 35px}
+.focus-intro h1{font-size:clamp(32px,4vw,51px);font-weight:600;line-height:1.45;letter-spacing:-.04em}
+.focus-intro h1 strong{color:var(--green);font-weight:650}
+.focus-intro>p:not(.reader-kicker){font-size:17px;color:#567065;line-height:1.95;max-width:830px;margin-top:18px}
+.focus-intro>p strong{color:var(--ink)}
+.focus-summary{display:flex;align-items:center;gap:12px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:20px 0;margin-top:24px;font-size:12px;justify-content:space-between}
+.focus-summary>i{color:#94a48c;font-style:normal}
+.focus-summary>b{font-weight:600;color:var(--green)}
+.focus-intro>.focus-key{font-size:13px!important;line-height:1.9}
+.focus-walk{padding:27px 0 37px}
+.focus-walk-heading{display:flex;align-items:end;gap:20px;justify-content:space-between;margin-bottom:15px}
+.focus-walk-heading .reader-kicker{font-size:10px;margin-bottom:10px;letter-spacing:.06em}
+.focus-walk-heading h2{font-size:24px;line-height:1.65}
+.focus-walk-heading>span{font-size:10px;white-space:nowrap;color:var(--muted);padding-bottom:6px}
+.focus-assumption{font-size:11px;color:#73806f;line-height:1.95;max-width:850px}
+.focus-controls{display:grid;grid-template-columns:auto 1fr;align-items:center;column-gap:19px;row-gap:8px;padding:18px 21px;margin-top:21px;background:#e8eee0;border:1px solid #cbdcc1;border-radius:9px 9px 0 0}
+.focus-controls>span{font-size:12px;color:var(--green);font-weight:600}
+.focus-controls>div{display:flex;gap:7px}
+.focus-controls button{background:#fbfcf6;border-color:#b9cbb0;font-size:13px;font-variant-numeric:tabular-nums;min-width:52px;min-height:36px;padding:4px 14px}
+.focus-controls button.active{background:var(--green);color:white;border-color:var(--green)}
+.focus-controls>p{grid-column:1/-1;font-size:12px;color:#4f6d55;min-height:23px}
+.focus-board{border:1px solid #cbdcc1;border-top:0;background:#fffefa;border-radius:0 0 10px 10px;overflow:hidden}
+.focus-columns,.focus-row{display:grid;grid-template-columns:1.1fr 1fr 1fr}
+.focus-columns{align-items:stretch;border-bottom:1px solid #dce4d3}
+.focus-columns>span{display:flex;align-items:center;padding:20px 22px;font-size:11px;color:var(--muted)}
+.focus-columns>div{padding:16px 22px;border-left:1px solid #e1e7d8}
+.focus-columns small{display:block;font-size:10px;color:#7e8b75;margin-bottom:3px}
+.focus-columns b{display:block;font-size:14px}
+.bridge-b{transition:background-color .15s}
+.bridge-b.chosen{background:#edf4e5}
+.focus-phase{font-size:11px;color:var(--green);padding:10px 22px;background:#eaf0e3;border-top:1px solid #d9e3d0;border-bottom:1px solid #d9e3d0;font-weight:650}
+.focus-phase>span{font-size:10px;color:#73836a;font-weight:400;margin-left:18px}
+.focus-phase.generation{margin-top:0;background:#e2ecda}
+.focus-row{border-bottom:1px solid #e0e6d8;align-items:stretch}
+.focus-step{display:flex;align-items:start;gap:12px;padding:24px 22px}
+.focus-step>span{display:grid;place-items:center;width:22px;height:22px;border:1px solid #bac9af;border-radius:50%;flex-shrink:0;color:var(--green);font-size:10px;margin-top:1px}
+.focus-step h3{font-size:14px;line-height:1.65;letter-spacing:-.02em}
+.focus-step p{font-size:10px;line-height:1.8;color:var(--muted);margin-top:5px}
+.focus-cell{padding:22px;border-left:1px solid #e1e7d8;display:flex;flex-direction:column;justify-content:center;align-items:start;gap:5px;min-width:0}
+.focus-cell>output{float:none;font-size:30px;color:var(--green);font-weight:650;font-variant-numeric:tabular-nums;line-height:1.4;letter-spacing:-.03em}
+.focus-cell>small{font-size:10px;color:#7c8973;line-height:1.8}
+.focus-flag{font-size:13px;color:#75826a;font-weight:500}
+.chosen .focus-flag{color:var(--green);font-weight:650}
+.focus-handoff{margin:0;padding:19px 22px;background:#f4f6ee;display:grid;grid-template-columns:26px 1fr;gap:2px 10px;border-bottom:1px solid #dce4d2}
+.focus-handoff>span{grid-row:1/3;align-self:center;font-size:22px;color:#7c9a71}
+.focus-handoff>strong{font-size:12px;color:var(--green)}
+.focus-handoff>small{font-size:10px;color:#7a866e}
+.focus-add{display:flex;align-items:baseline;gap:8px;font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.focus-add>span{color:#7c8973}
+.focus-add>b{font-size:23px;color:#74856a;font-weight:600}
+.chosen .focus-add>b{color:var(--green)}
+.focus-final .focus-cell>output{font-size:33px}
+.focus-final .focus-cell>small{font-size:10px}
+.focus-mass{padding:17px 22px;display:grid;grid-template-columns:1.1fr 2fr;gap:22px;align-items:center}
+.focus-mass>span{font-size:10px;color:var(--muted)}
+.focus-mass-track{display:flex;height:23px;border-radius:4px;overflow:hidden;min-width:0}
+.focus-mass-track>div{font-size:10px;display:flex;justify-content:center;align-items:center;transition:width .2s}
+#bridge-bar-a{background:#d1dac8;color:#576c4e}#bridge-bar-b{background:#45917b;color:white}
+.unselected #bridge-bar-b{background:#b9c9ad;color:#576c4e}
+.focus-conclusion{font-size:13px;color:var(--green);font-weight:600;border-left:3px solid #7ba78b;padding:5px 0 5px 17px;margin-top:22px;line-height:1.95}
+.focus-calculation{font-size:12px;border-top:1px solid var(--line);margin-top:21px;color:var(--muted)}
+.focus-calculation>summary{padding:13px 0;cursor:pointer;width:fit-content;font-size:12px}
+.focus-calculation>div{padding:3px 0 15px;font-size:12px;line-height:1.95}
+.focus-calculation-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:16px 0;background:#eaf0e2;padding:17px;border-radius:7px}
+.focus-calculation-grid>div{min-width:0}.focus-calculation-grid>div>span{display:block;font-size:10px;color:var(--muted);margin-bottom:7px;text-align:center}
+.focus-answer{border-top:1px solid var(--line);padding:32px 0 35px}
+.focus-answer h2{font-size:23px}
+.focus-answer-grid{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin:23px 0}
+.focus-answer-grid>div{border-left:2px solid #c1d4b5;padding-left:18px}
+.focus-answer-grid>div>span{font-size:10px;color:var(--muted);display:block;margin-bottom:4px}
+.focus-answer-grid strong{font-size:18px;display:block;color:var(--green);margin-bottom:8px}
+.focus-answer-grid p{font-size:12px;color:var(--muted);line-height:1.95}
+.focus-answer>p{font-size:12px;color:var(--muted);line-height:1.95}
+.focus-answer>p strong{color:var(--ink)}
+.focus-answer>.focus-lifecycle{border-top:1px solid var(--line);padding-top:20px;margin-top:20px}
+@media(max-width:720px){
+ .focus-intro{padding:34px 0 22px}.focus-intro .reader-kicker{font-size:9px;margin-bottom:17px}.focus-intro h1{font-size:29px;line-height:1.55}.focus-intro>p:not(.reader-kicker){font-size:14px;margin-top:17px}.focus-intro>.focus-key{font-size:11px!important}
+ .focus-summary{display:flex;flex-direction:column;gap:6px;font-size:11px;text-align:center;padding:17px 0;margin-top:20px}.focus-summary>i{transform:rotate(90deg);font-size:12px;line-height:1}
+ .focus-walk{padding-top:20px;padding-bottom:27px}.focus-walk-heading{display:block;margin-bottom:12px}.focus-walk-heading .reader-kicker{font-size:9px;margin-bottom:8px}.focus-walk-heading h2{font-size:20px}.focus-walk-heading>span{display:block;font-size:9px;margin-top:9px;padding:0}.focus-assumption{font-size:10px;line-height:1.95}
+ .focus-controls{display:block;padding:15px;margin-top:18px}.focus-controls>span{font-size:11px}.focus-controls>div{margin:9px 0}.focus-controls button{font-size:12px;min-height:36px;min-width:57px}.focus-controls>p{font-size:11px;min-height:41px;line-height:1.9}
+ .focus-columns,.focus-row{grid-template-columns:1fr 1fr}.focus-columns>span{grid-column:1/-1;padding:9px 14px;font-size:9px;border-bottom:1px solid #e1e7d8}.focus-columns>div{padding:12px 15px}.focus-columns>div:nth-child(2){border-left:0}.focus-columns small{font-size:9px}.focus-columns b{font-size:12px}
+ .focus-phase{padding:9px 14px;font-size:10px}.focus-phase>span{display:block;font-size:9px;margin-left:0;margin-top:2px;line-height:1.8}
+ .focus-step{grid-column:1/-1;padding:13px 14px 9px;gap:9px}.focus-step>span{height:19px;width:19px;font-size:9px}.focus-step>div{display:flex;align-items:baseline;flex-wrap:wrap;gap:3px 10px}.focus-step h3{font-size:12px}.focus-step p{font-size:9px;margin:0}.focus-step p>br{display:none}
+ .focus-cell{padding:10px 15px 16px;gap:4px;border-left:0}.focus-row>.focus-cell:last-child{border-left:1px solid #e1e7d8}.focus-cell>output{font-size:26px}.focus-cell>small{font-size:9px;line-height:1.8}.focus-flag{font-size:11px}.focus-handoff{padding:14px;grid-template-columns:20px 1fr;gap:3px 8px}.focus-handoff>span{font-size:18px}.focus-handoff>strong{font-size:11px}.focus-handoff>small{font-size:9px;line-height:1.8}
+ .focus-add{font-size:11px;gap:6px}.focus-add>b{font-size:22px}.focus-final .focus-cell>output{font-size:28px}.focus-final .focus-cell>small{font-size:9px}.focus-mass{display:block;padding:13px 15px 17px}.focus-mass>span{display:block;font-size:9px;margin-bottom:8px}.focus-mass-track{height:20px}.focus-mass-track>div{font-size:9px}
+ .focus-conclusion{font-size:12px;margin-top:18px;padding-left:13px}.focus-calculation>summary{font-size:11px}.focus-calculation>div{font-size:11px}.focus-calculation-grid{grid-template-columns:1fr;gap:15px;padding:15px}.focus-calculation-grid>div>span{font-size:9px}.focus-calculation-grid .math-expression{font-size:14px}
+ .focus-answer{padding:26px 0 28px}.focus-answer h2{font-size:20px}.focus-answer-grid{grid-template-columns:1fr;gap:22px;margin:20px 0}.focus-answer-grid>div{padding-left:14px}.focus-answer-grid strong{font-size:16px}.focus-answer-grid p{font-size:11px}.focus-answer>p{font-size:11px}
+}
+@media(max-width:360px){.focus-intro h1{font-size:25px}.focus-intro>p:not(.reader-kicker){font-size:13px}.focus-summary{font-size:10px;column-gap:5px}.focus-walk-heading h2{font-size:18px}.focus-columns b{font-size:11px}.focus-controls{padding:13px}.focus-cell{padding-left:12px;padding-right:12px}.focus-flag{font-size:10px}.focus-add{font-size:10px;gap:5px}.focus-add>b{font-size:20px}.focus-cell>small{font-size:8px}.focus-final .focus-cell>small{font-size:8px}.focus-final .focus-cell>output{font-size:25px}}
+@media print{.focus-controls{display:none}.focus-intro{padding-top:10px}.focus-board{break-inside:avoid;print-color-adjust:exact}.focus-summary{print-color-adjust:exact}}
+
 </style>
 </head>
 <body class="plain-page">
 <a class="skip-link" href="#main">跳到正文</a>
 <header class="site-header">
   <a class="brand" href="#top"><span class="brand-icon" aria-hidden="true">↗</span><span>ATTENTION LAB<small>面向 SWE-bench Agent</small></span></a>
-  <nav aria-label="页面目录"><a href="#choose">选位置</a><a href="#reweight">改权重</a><a href="#effect">影响生成</a><a href="#learn">怎么训练</a></nav>
+  <nav aria-label="页面目录"><a href="#bridge">看完整连接</a><a href="#reweight">哪里改变 attention</a><a href="#effect">记住两件事</a></nav>
   <a class="header-cta" href="#appendices">技术附录 ↗</a>
 </header>
 <main id="main">
-<section class="reader-hero reader-width" id="top">
-  <p class="reader-kicker">QWEN3.6 · ATTENTION STEERING</p>
-  <h1>让模型修代码时，<br><em>多用一点关键证据。</em></h1>
-  <p class="reader-intro">长对话里，重要的代码和报错可能被大量日志淹没。我们训练一个<strong>重要性评分头</strong>找出这些片段，再在生成时，提高它们在 attention 中的相对权重。</p>
-  <div class="reader-map" aria-label="方法的三个步骤"><div><span>01</span><b>读完整历史</b><small>Issue、代码、工具结果</small></div><i aria-hidden="true">→</i><div><span>02</span><b>标出重要位置</b><small>训练好的评分头负责选</small></div><i aria-hidden="true">→</i><div><span>03</span><b>生成时增加权重</b><small>让这些位置的信息更多地参与</small></div></div>
-  <p class="reader-definition"><strong>Attention 是什么？</strong>可以把它理解为：模型生成这一步时，历史中各个位置的信息，分别按多大比例参与计算。</p>
-  <a class="reader-start" href="#choose">沿着一次推理看下去 <span aria-hidden="true">↓</span></a>
+<section class="focus-intro reader-width" id="top">
+  <p class="reader-kicker">只看推理：评分头 → ATTENTION</p>
+  <h1>评分头负责<strong>选位置</strong>，<br>推理代码负责<strong>加权重</strong>。</h1>
+  <p>两者通过<strong>“这个位置是否被选中”</strong>连接。选中的位置，在 attention 的匹配分上统一加 1，再重新计算 attention 权重。</p>
+  <div class="focus-summary" aria-label="评分头与attention之间的连接"><span>评分头得分</span><i>→</i><b>选中标记 0 / 1</b><i>→</i><span>匹配分 + 标记 × 1</span><i>→</i><b>新 attention 权重</b></div>
+  <p class="focus-key">生成时真正用到的是<strong>位置标记</strong>。评分头的 0.9 不会直接变成 90% 的 attention。</p>
+  <p class="focus-key"><strong>“匹配分”是什么？</strong>生成中的模型会计算：当前这一步与每个历史 token 有多相关。这些分数转成比例，才是 attention 权重；它们与评分头的“重要性分数”是两种不同的数。</p>
 </section>
 
-<section class="reader-section reader-width" id="choose">
-  <div class="reader-heading"><span>01 / 选位置</span><h2>评分头先判断：<br class="mobile-break">这一步，哪些历史值得多看？</h2></div>
-  <p>模型先读完当前的全部历史。评分头利用模型读到的信息，给每个历史块打分，再选出重要块的 <strong>token 位置</strong>。Token 就是模型处理文本的小单位。</p>
-  <figure class="reader-history">
-    <figcaption><strong>辅助例子：Agent 正在排查配置读取错误</strong><span>文本和分数均为教学设定</span></figcaption>
-    <div class="reader-history-row"><span>安装日志</span><p>依赖已安装完成。</p><b>0.18</b></div>
-    <div class="reader-history-row"><span>重复输出</span><p>再次列出同一批目录。</p><b>0.12</b></div>
-    <div class="reader-history-row"><span>旧猜测</span><p>曾怀疑网络问题，已被排除。</p><b>0.09</b></div>
-    <div class="reader-history-row selected"><span>源码与复现 <small>入选</small></span><p><code>timeout = cfg.get("timeout") or 30</code><br>传入 0 后，实际却得到 30。</p><b>0.96</b></div>
-    <div class="reader-history-foot"><span>完整历史仍然保留</span><strong>选中块 → 这一整块的 token 位置被标记</strong></div>
-  </figure>
-  <p class="reader-note">当前默认：约 256 token 一块，选分数 ≥ 0.5 的前 12 块；不足 12 块就少选，也允许不选。评分头在一次请求开始时运行一次。</p>
-  <p class="reader-point"><strong>这一阶段的产物是一份“位置清单”。</strong><br>0.96 只用于决定选不选，不会直接变成 96% 的 attention 权重。</p>
-</section>
+<section class="focus-walk reader-width" id="bridge">
+  <div class="focus-walk-heading"><div><p class="reader-kicker">沿着同一组位置，看完四步</p><h2>让 B 的评分改变，<br class="mobile-break">看它怎样影响下面的 attention。</h2></div><span>可点击演示 · 不调用模型</span></div>
+  <p class="focus-assumption">教学设定：历史只有 A、B 两块，每块 256 个 token；演示一行 attention，所有位置原始匹配分都为 0。表中 attention 百分比是<strong>整块的权重合计</strong>，非模型实测。</p>
+  <div class="focus-controls"><span>试着改变评分头给 B 的分数：</span><div role="group" aria-label="选择块B的重要性得分"><button type="button" data-bridge-score="0.9" class="active" aria-pressed="true">0.9</button><button type="button" data-bridge-score="0.6" aria-pressed="false">0.6</button><button type="button" data-bridge-score="0.3" aria-pressed="false">0.3</button></div><p id="bridge-feedback" aria-live="polite">B 得分 0.9，达到门槛，因此 B 的全部 token 位置会被选中。</p></div>
 
-<section class="reader-band" id="reweight"><div class="reader-section reader-width">
-  <div class="reader-heading"><span>02 / 改权重</span><h2>生成时，给选中位置<br class="mobile-break">的匹配分额外加 1。</h2></div>
-  <p>每生成一个 token，模型会计算当前这一步与各个历史位置的匹配分。我们在<strong>换算成 attention 权重之前</strong>，给清单中的位置加分，再把所有位置的分数一起换算成总和为 100% 的权重。</p>
-  <div class="reader-equation" aria-label="修改attention的顺序"><span>原始匹配分</span><i>→</i><strong>选中位置 +1</strong><i>→</i><span>重新计算权重</span></div>
-  <div class="reader-demo">
-    <div class="reader-demo-top"><div><h3>看一次权重重新分配</h3><p>四个 token 位置的简化计算，非模型实测</p></div><div class="reader-switch" role="group" aria-label="切换是否增加attention偏置"><button type="button" data-reader-mode="off" aria-pressed="false">关闭增强</button><button type="button" data-reader-mode="on" aria-pressed="true" class="active">开启增强</button></div></div>
-    <div class="reader-bar-head" aria-hidden="true"><span>历史位置</span><span>原来</span><span>当前权重</span></div>
-    <div class="reader-bar-row"><span>安装日志</span><small>25.0%</small><div><i style="width:17.49%"></i><output data-reader-weight="0">17.5%</output></div></div>
-    <div class="reader-bar-row"><span>重复输出</span><small>25.0%</small><div><i style="width:17.49%"></i><output data-reader-weight="1">17.5%</output></div></div>
-    <div class="reader-bar-row"><span>旧猜测</span><small>25.0%</small><div><i style="width:17.49%"></i><output data-reader-weight="2">17.5%</output></div></div>
-    <div class="reader-bar-row selected"><span>复现证据 <small>已选中</small></span><small>25.0%</small><div><i style="width:47.54%"></i><output data-reader-weight="3">47.5%</output></div></div>
-    <p id="reader-demo-explanation" class="reader-demo-result" aria-live="polite">选中位置从 25.0% 增加到 47.5%。其他位置仍参与计算，占比相应降低。</p>
-    <details class="reader-assumptions"><summary>这张图的计算假设</summary><p>只取四个代表位置，假设原始匹配分都为 0，其中一个位于入选块内。加分后是 [0, 0, 0, 1]，经 softmax 得到图中的比例。真实推理会给入选块内的全部 token 位置加分；原始匹配分和最终比例因查询、层和 attention head 而变化。</p></details>
+  <div class="focus-board">
+    <div class="focus-columns"><span>两块历史始终保留</span><div><small>块 A</small><b>依赖安装日志</b></div><div class="bridge-b chosen"><small>块 B</small><b>源码与复现报错</b></div></div>
+    <p class="focus-phase">先评分 <span>完整历史 → 模型隐藏状态 → 评分头</span></p>
+    <div class="focus-row" id="choose"><div class="focus-step"><span>1</span><div><h3>评分头打分</h3><p>判断每块重要不重要</p></div></div><div class="focus-cell"><output>0.2</output><small>分数仅用于选块</small></div><div class="focus-cell bridge-b chosen"><output id="bridge-score">0.9</output><small>分数仅用于选块</small></div></div>
+    <div class="focus-row"><div class="focus-step"><span>2</span><div><h3>变成位置标记</h3><p>本图按 0.5 门槛选择</p></div></div><div class="focus-cell"><strong class="focus-flag">未选中 · 标记 0</strong><small>A 的全部 token 位置</small></div><div class="focus-cell bridge-b chosen"><strong class="focus-flag" id="bridge-flag">已选中 · 标记 1</strong><small>B 的全部 token 位置</small></div></div>
+    <p class="focus-handoff"><span aria-hidden="true">↓</span><strong>传给生成阶段：选中的 token 位置清单</strong><small>同一份完整历史也会传入；原来的 0.9 不用于决定加分幅度。</small></p>
+    <p class="focus-phase generation">再生成 <span>模型自己计算原始匹配分，推理代码按标记加分</span></p>
+    <div class="focus-row" id="reweight"><div class="focus-step"><span>3</span><div><h3>Attention 加分</h3><p>加在归一化之前</p></div></div><div class="focus-cell"><div class="focus-add"><span>原分 0</span><b>+ 0</b><span>= 0</span></div><small>每个 token 都不额外加分</small></div><div class="focus-cell bridge-b chosen"><div class="focus-add"><span>原分 0</span><b id="bridge-bias">+ 1</b><span id="bridge-logit">= 1</span></div><small id="bridge-token-note">每个 token 都额外加 1</small></div></div>
+    <div class="focus-row focus-final"><div class="focus-step"><span>4</span><div><h3>重新算权重</h3><p>Softmax：换算成总和<br>为 100% 的比例</p></div></div><div class="focus-cell"><small>原来 50.0% → 现在</small><output id="bridge-mass-a">26.9%</output></div><div class="focus-cell bridge-b chosen"><small>原来 50.0% → 现在</small><output id="bridge-mass-b">73.1%</output></div></div>
+    <div class="focus-mass"><span>当前 attention 合计</span><div class="focus-mass-track" role="img" id="bridge-mass-chart" aria-label="块A占26.9%，块B占73.1%"><div id="bridge-bar-a" style="width:26.9%">A</div><div id="bridge-bar-b" style="width:73.1%">B</div></div></div>
   </div>
-  <p class="reader-point"><strong>增加的是相对权重。</strong><br>“加 1”加在匹配分上，不是给最终百分比加 1，也不是把某个位置的权重固定下来。</p>
-  <p class="reader-note">本版在第 27、31、35、39 层的 full attention 中执行这一步。生成的首步和后续每一步都使用选区；完整公式与具体查询行见技术附录。</p>
-</div></section>
-
-<section class="reader-section reader-width" id="effect">
-  <div class="reader-heading"><span>03 / 影响生成</span><h2>信息的配比变了，<br class="mobile-break">下一步预测就可能改变。</h2></div>
-  <p>Attention 按这些权重，把历史位置携带的信息加权汇总。复现证据占比变大，就会更多地进入这一步的汇总结果。这个结果继续经过模型后面的计算，可能改变下一个 token 的预测概率。</p>
-  <div class="reader-output-chain"><div><b>历史信息的配比</b><span>Attention 权重改变</span></div><i>→</i><div><b>当前的信息汇总</b><span>后续网络的输入改变</span></div><i>→</i><div><b>接下来的生成</b><span>工具命令、分析或补丁可能改变</span></div></div>
-  <p>在上面的修复场景中，我们希望 Agent 持续利用“0 被错误替换为 30”这条证据，继续检查配置读取逻辑。实际会生成什么、补丁能否通过测试，仍要由模型计算和独立评测确认。</p>
-  <div class="reader-timing"><h3>Agent 调完工具后，会怎样？</h3><p><strong>本次请求：</strong>评分一次 → 固定选区 → 生成期间逐步调整 attention。</p><p><strong>工具结果返回后的下一次请求：</strong>读更新后的完整历史 → 重新评分 → 带新的选区继续生成。</p></div>
+  <p class="focus-conclusion" id="bridge-conclusion" aria-live="polite"><strong>结果：B 被选中 → 匹配分加 1 → B 的 attention 合计从 50.0% 变为 73.1%。</strong></p>
+  <details class="focus-calculation"><summary>为什么示例会得到 73.1%？</summary><div><p>Softmax 会先对匹配分取指数，再除以总和。两块长度相同，每块内的匹配分也相同，所以公共的 256 个位置可以约去。B 被选中时：</p><div class="focus-calculation-grid"><div><span>A 块合计</span><span class="math-expression math-block" data-math-source="\frac{1}{1+e^1}\approx 26.9\%"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><msup><mi>e</mi><mn>1</mn></msup></mrow></mfrac><mo>≈</mo><mn>26.9</mn><mi mathvariant="normal">%</mi></mrow><annotation encoding="application/x-tex">\frac{1}{1+e^1}\approx 26.9\%</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:2.0908em;vertical-align:-0.7693em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3214em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">1</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord"><span class="mord mathnormal">e</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7401em;"><span style="top:-2.989em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.7693em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8056em;vertical-align:-0.0556em;"></span><span class="mord">26.9%</span></span></span></span></span></span></div><div><span>B 块合计</span><span class="math-expression math-block" data-math-source="\frac{e^1}{1+e^1}\approx 73.1\%"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mfrac><msup><mi>e</mi><mn>1</mn></msup><mrow><mn>1</mn><mo>+</mo><msup><mi>e</mi><mn>1</mn></msup></mrow></mfrac><mo>≈</mo><mn>73.1</mn><mi mathvariant="normal">%</mi></mrow><annotation encoding="application/x-tex">\frac{e^1}{1+e^1}\approx 73.1\%</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:2.2604em;vertical-align:-0.7693em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.4911em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">1</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord"><span class="mord mathnormal">e</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7401em;"><span style="top:-2.989em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal">e</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.7693em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8056em;vertical-align:-0.0556em;"></span><span class="mord">73.1%</span></span></span></span></span></span></div></div><p>这解释的是图中的简化计算。真实 attention 的初始匹配分各不相同，最终比例会随生成步、层和 attention head 改变。</p></div></details>
 </section>
 
-<section class="reader-section reader-width reader-training" id="learn">
-  <div class="reader-heading"><span>04 / 训练来源</span><h2>评分头怎样学会<br class="mobile-break">“哪些片段更重要”？</h2></div>
-  <p>训练数据取自 Agent 解决代码任务的过程，每个样本停在一个决策时刻。教师模型只看当时已经可见的历史，标出值得关注的块；评分头学习预测这些标签。</p>
-  <ol class="reader-learning"><li><span>1</span><div><h3>教师提供标签</h3><p>选中的历史块标为 1，其余标为 0。教师看不到未来工具结果或标准补丁。</p></div></li><li><span>2</span><div><h3>用误差更新参数</h3><p>评分头预测每块的分数，与教师标签比较。预测错得越多，训练误差越大；反向传播据此更新评分头和模型的 LoRA 参数。同时学习轨迹中的下一步动作。</p></div></li><li><span>3</span><div><h3>随模型一起部署</h3><p>训练后保存匹配的模型权重和评分头。推理时评分头直接运行在模型的隐藏状态上，由它独立选位置。</p></div></li></ol>
-  <p class="reader-note">本次训练使用 21,278 个决策样本；评分头有 528,545 个参数。在线推理不再需要教师告诉模型哪里重要。</p>
-</section>
+<section class="focus-answer reader-width" id="effect"><h2>最关键的区别</h2><div class="focus-answer-grid"><div><span>评分头决定</span><strong>哪些位置获得加分</strong><p>0.9 与 0.6：如果选区不变，加分相同。<br>降到 0.3：低于门槛，这块就不再加分。</p></div><div><span>部署配置决定</span><strong>选中后，加多少分</strong><p>当前默认统一加 1。<br>0.9 的块不会加 0.9，也不会加 90%。</p></div></div><p class="focus-lifecycle"><strong>实际执行时：</strong>先用完整历史预评分一次，再用相同完整历史和选中位置开始生成。在 27、31、35、39 层中，每个生成步都按这些位置调整 attention；本次生成不重复评分。工具结果返回，下一次请求再重新评分。</p><p>新的 attention 权重用于加权汇总历史信息，汇总结果再进入后续网络，因而可能改变工具命令或补丁。是否改善任务结果仍需独立评测。</p></section>
 
-<section class="reader-recap reader-width"><p>把整件事连起来</p><h2>训练学会选位置，<br>推理增加这些位置的相对 attention，<br>让关键信息更多地参与后续生成。</h2><span>这解释了干预怎样发生；是否提升 SWE-bench 成绩，需要独立对照评测。</span></section>
-
-<section class="reader-appendices reader-width" id="appendices"><div class="reader-heading"><span>按需查阅</span><h2>实现细节与训练记录</h2></div><p class="reader-note">下面保留完整原理、公式、代码路径和历史验证依据。初次阅读到这里，已经可以理解主要机制。</p>
+<section class="reader-appendices reader-width" id="appendices"><div class="reader-heading"><span>按需展开</span><h2>训练、源码与完整公式</h2></div><p class="reader-note">主图对应当前默认 head 模式。实际按得分排序，选 ≥ 0.5 的前 12 块，选中整块的 token。下面保留此前的训练过程、实现细节与验证记录。</p>
 <details class="reader-appendix" id="implementation"><summary><span>A</span><div><strong>推理实现与完整公式</strong><small>两次模型请求、评分头结构、选区、attention hook 与数值交互</small></div><i aria-hidden="true">+</i></summary><div class="reader-reference"><section class="chapter wrap" id="inference">
 <div class="chapter-heading"><span class="chapter-number">01</span><div><p class="eyebrow">对应最新部署的实际请求路径</p><h2>一次外部请求，在网关内部拆成“评分”和“生成”两次模型请求。</h2><p>客户端照常发送 issue、对话和工具结果。默认 head 模式下，网关完成以下步骤；评分阶段的文字输出不会成为最终回答的一部分。</p></div></div>
 <div class="build-proof"><b>部署身份已核对</b><p>服务报告 SGLang 0.5.16、gateway 0.7.0、默认 <code>head</code>、λ = 1、层 27 / 31 / 35 / 39。网关、评分 hook、attention hook 和诊断 processor 的本地源码 SHA256 与服务构建记录一致。</p><small>这是一次只读配置与源码身份检查，不是新的推理验收或 benchmark。完整构建标识与核对时间见下载记录。</small></div>
@@ -362,7 +426,7 @@ result[query_rows] = changed         # 替换 attention 输出行</code></pre><p
 </div></section>
 
 </div></details>
-<details class="reader-appendix" id="training-background"><summary><span>B</span><div><strong>训练数据与训练方法</strong><small>教师监督、联合损失、数据量、训练参数与导出</small></div><i aria-hidden="true">+</i></summary><div class="reader-reference"><section class="tinted"><div class="chapter wrap" id="data">
+<details class="reader-appendix" id="training-background"><summary><span>B</span><div><strong>训练数据与训练方法</strong><small>教师监督、联合损失、数据量、训练参数与导出</small></div><i aria-hidden="true">+</i></summary><div class="reader-reference"><section class="tinted"><div class="chapter wrap" id="data"><span id="learn"></span>
   <div class="chapter-heading"><span class="chapter-number">A1</span><div><p class="eyebrow">决策数据与教师标注</p><h2>每个训练样本，固定在 Agent 的一个决策时刻。</h2><p>样本包含当时的完整可见历史；动作目标来自轨迹中随后记录的动作，重要性标签来自教师对当前历史的选择。两种监督有不同来源。</p></div></div>
   <div class="agent-cycle"><span>Issue / 仓库环境</span><i>→</i><span>检索、读代码</span><i>→</i><span>复现、观察错误</span><i>→</i><span>修改、运行测试</span><i>↺</i><span>继续决策</span></div>
   <div class="sample-schema"><div><span class="mini-label">输入 xₜ：截至此刻的可见历史</span><p>系统与工具说明、issue、已执行的工具调用和结果、模型此前的回复。保留原有顺序、关联和完整 token。</p></div><div><span class="mini-label">动作目标 aₜ：轨迹中的下一步</span><p>例如检索源码、执行复现命令或修改文件。只有格式有效的动作才用于动作模仿；格式有效不代表动作正确。</p></div><div><span class="mini-label">重要性标签 yₜ：教师的块级选择</span><p>按约 256 token 切连续块，让教师只基于当前可见历史选至多 12 块，也允许不选。</p></div></div>
@@ -433,25 +497,41 @@ window.REAL_PROBE = {"label":"2026-11-18 · GPU 0 · 合成工具协议探针 ·
   const binaryLoss=(p,label)=>-Math.log(label?p:1-p);
   window.SteeringMath=Object.freeze({selectBlocks,softmax,steer,binaryLoss});
 
-  // The short overview uses the same softmax calculation as the detailed demo.
-  function renderReaderAttention(enabled) {
-    const weights=steer([0,0,0,0],new Set([3]),enabled?1:0);
-    for(const output of document.querySelectorAll('[data-reader-weight]')) {
-      const index=Number(output.dataset.readerWeight);
-      output.textContent=(weights[index]*100).toFixed(1)+'%';
-      output.previousElementSibling.style.width=(weights[index]*100)+'%';
+  // Trace the actual handoff: block scores -> positions -> binary bias -> softmax.
+  // Every displayed percentage sums the weights of 256 token positions.
+  function renderBridge(score) {
+    const blocks=[{start:0,end:256},{start:256,end:512}], scores=[.2,score];
+    const selection=selectBlocks(scores,blocks,.5,12), marked=new Set();
+    for(const index of selection.chosen)for(let j=blocks[index].start;j<blocks[index].end;j++)marked.add(j);
+    const weights=steer(Array(512).fill(0),marked,1), selected=selection.chosen.includes(1);
+    const mass=blocks.map(block=>weights.slice(block.start,block.end).reduce((a,b)=>a+b,0));
+    const pct=mass.map(x=>(100*x).toFixed(1)+'%');
+    $('#bridge-score').textContent=score.toFixed(1);
+    $('#bridge-flag').textContent=selected?'已选中 · 标记 1':'未选中 · 标记 0';
+    $('#bridge-bias').textContent=selected?'+ 1':'+ 0';
+    $('#bridge-logit').textContent=selected?'= 1':'= 0';
+    $('#bridge-token-note').textContent=selected?'每个 token 都额外加 1':'每个 token 都不额外加分';
+    for(const cell of document.querySelectorAll('.bridge-b'))cell.classList.toggle('chosen',selected);
+    for(const [index,name] of ['a','b'].entries()){
+      $('#bridge-mass-'+name).textContent=pct[index];
+      $('#bridge-bar-'+name).style.width=(mass[index]*100)+'%';
     }
-    for(const button of document.querySelectorAll('[data-reader-mode]')) {
-      const active=(button.dataset.readerMode==='on')===enabled;
+    $('#bridge-mass-chart').setAttribute('aria-label','块 A 占 '+pct[0]+'，块 B 占 '+pct[1]);
+    $('#bridge-mass-chart').classList.toggle('unselected',!selected);
+    for(const button of document.querySelectorAll('[data-bridge-score]')){
+      const active=Number(button.dataset.bridgeScore)===score;
       button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));
     }
-    $('#reader-demo-explanation').textContent=enabled
-      ?'选中位置从 25.0% 增加到 47.5%。其他位置仍参与计算，占比相应降低。'
-      :'关闭增强：四个位置的匹配分仍然相同，attention 权重都为 25.0%。';
-    window.ReaderAttentionState={enabled,weights};
+    $('#bridge-feedback').textContent=selected
+      ?(score===.6?'B 从 0.9 降到 0.6，仍然入选。标记仍为 1，所以加分和 attention 权重都不变。':'B 得分 0.9，达到门槛，因此 B 的全部 token 位置会被选中。')
+      :'B 降到 0.3，低于门槛。标记变成 0，不再加分，attention 恢复原来的比例。';
+    $('#bridge-conclusion').textContent=selected
+      ?'结果：B 被选中 → 匹配分加 1 → B 的 attention 合计从 50.0% 变为 '+pct[1]+'。'
+      :'结果：B 未选中 → 匹配分不加分 → A、B 的 attention 合计仍各为 50.0%。';
+    window.BridgeState={scores,selectedBlocks:selection.chosen,markedPositions:[...marked],bias:1,weights,attentionByBlock:mass};
   }
-  for(const button of document.querySelectorAll('[data-reader-mode]'))button.addEventListener('click',()=>renderReaderAttention(button.dataset.readerMode==='on'));
-  renderReaderAttention(true);
+  for(const button of document.querySelectorAll('[data-bridge-score]'))button.addEventListener('click',()=>renderBridge(Number(button.dataset.bridgeScore)));
+  renderBridge(.9);
 
   // Old deep links remain useful even after their sections move into appendices.
   function revealAnchor(hash) {
