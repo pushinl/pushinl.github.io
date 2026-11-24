@@ -562,13 +562,42 @@ SOFTWARE.
 @media(max-width:360px){.qkv-walk .reader-heading h2{font-size:20px}.qkv-walk>p{font-size:12px}.qkv-match h3{font-size:14px}.qkv-match p{font-size:11px}.qkv-flow>div{gap:10px;padding:11px 12px}.qkv-flow b{font-size:10px}.qkv-flow span{font-size:8px}.qkv-numeric .math-block,.qkv-implementation .math-block{font-size:13px}.qkv-toy-output strong{font-size:17px}}
 @media print{.qkv-projections>div{break-inside:avoid}.qkv-flow,.qkv-toy-output{print-color-adjust:exact}}
 
+/* One stored score-head request: actual block scores, distinct from attention weights. */
+.score-visualization{padding:36px 0 40px;border-top:1px solid var(--line)}
+.score-visualization .reader-heading h2{font-size:27px}
+.score-visualization>p{font-size:13px;color:var(--muted);line-height:1.95;max-width:880px}
+.score-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:20px 0}
+.score-stats>div{padding:13px 17px;border:1px solid var(--line);border-radius:7px;background:#fffefa}
+.score-stats strong{display:block;font-size:23px;line-height:1.35;font-variant-numeric:tabular-nums;color:var(--green)}
+.score-stats span{display:block;font-size:10px;color:var(--muted);margin-top:5px}
+.score-figure{border:1px solid var(--line);border-radius:9px;padding:16px;background:#fffefa}
+.score-figure figcaption{font-size:12px;font-weight:600;margin-bottom:9px}
+.score-chart-wrap{overflow-x:auto;max-width:100%}
+#score-chart{display:block;width:100%;min-width:620px;height:auto;overflow:visible}
+.score-gridline{stroke:#e0e5db;stroke-width:1}
+.score-threshold{stroke:#a16536;stroke-width:1.7;stroke-dasharray:5 5}
+.score-axis-label{fill:#61766a;font-family:system-ui,sans-serif;font-size:12px}
+.score-bar.below{fill:#b4c2b8}.score-bar.eligible{fill:#ba7a3f}.score-bar.selected{fill:#16806d}
+.score-bar{cursor:pointer}.score-bar:hover,.score-bar.inspected{stroke:#163c39;stroke-width:1.7;paint-order:stroke}
+.score-marker{stroke:#24493f;stroke-width:1;stroke-dasharray:2 3;pointer-events:none}
+.score-legend{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:11px;color:var(--muted);margin:8px 0 0 36px}
+.score-scroll-hint{display:none}
+.score-legend span{display:inline-flex;align-items:center;gap:7px}.score-legend i{display:inline-block;width:10px;height:10px;border-radius:2px}
+.score-legend .selected{background:#16806d}.score-legend .eligible{background:#ba7a3f}.score-legend .below{background:#b4c2b8}
+.score-inspect-label{display:block;font-size:12px;font-weight:600;color:var(--green);margin:19px 0 8px}
+.score-inspect-label input{display:block;width:min(100%,620px);margin-top:11px;accent-color:var(--green)}
+.score-visualization>.score-inspector{font-size:13px;color:var(--ink);font-variant-numeric:tabular-nums;background:#e9f1e3;padding:12px 15px;border-radius:6px}
+.score-visualization>.score-caveat{font-size:11px;margin-top:14px;color:var(--muted)}
+@media(max-width:720px){.score-visualization{padding:28px 0 31px}.score-visualization .reader-heading h2{font-size:22px}.score-visualization>p{font-size:11px}.score-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.score-stats strong{font-size:19px}.score-figure{padding:12px}.score-chart-wrap{margin-right:-2px}.score-scroll-hint{display:block;font-size:10px;color:var(--green);margin-top:4px}.score-legend{margin-left:0;font-size:10px}.score-inspect-label{font-size:11px}.score-visualization>.score-inspector{font-size:11px}}
+@media print{.score-bar,.score-stats>div{print-color-adjust:exact}.score-chart-wrap{overflow:visible}#score-chart{min-width:0}}
+
 </style>
 </head>
 <body class="plain-page">
 <a class="skip-link" href="#main">跳到正文</a>
 <header class="site-header">
   <a class="brand" href="#top"><span class="brand-icon" aria-hidden="true">↗</span><span>ATTENTION LAB<small>面向 SWE-bench Agent</small></span></a>
-  <nav aria-label="页面目录"><a href="#model-structure">模型结构</a><a href="#bridge">A/B 连接</a><a href="#layers">作用到四层</a><a href="#qkv">Q/K/V</a><a href="#softmax">权重怎样改变</a></nav>
+  <nav aria-label="页面目录"><a href="#model-structure">模型结构</a><a href="#bridge">A/B 连接</a><a href="#score-visualization">实测分数</a><a href="#qkv">Q/K/V</a><a href="#softmax">权重怎样改变</a></nav>
   <a class="header-cta" href="#model-structure">看结构图 ↘</a>
 </header>
 <main id="main">
@@ -625,6 +654,16 @@ SOFTWARE.
   <p class="layer-key"><strong>四层共享“选哪些位置”，各层独立计算 attention。</strong>每层的 Q/K/V 不同，原始匹配分也不同，所以最终权重各不相同；同一块内的 token 也只共享加分幅度。</p>
   <details class="layer-scope"><summary>加在哪一步？工具结果回来后会怎样？（可选）</summary><div><p>实际生成的前缀阶段，只修正最后一个前文位置对应的 query 行；随后每个 decode 步修正当前 query 行，并非重写历史全部 query 行。四层的改动会通过后续网络影响输出。</p><p>工具结果回传、发起下一次请求时，服务对更新后的完整前文重新评分、重新选位置。这里的“256”是评分块大小，生成仍按 token 推进。</p></div></details>
   <a class="focus-softmax-link" href="#qkv">接着看：每一层的 Q/K/V 与原始匹配分怎样产生 ↓</a>
+</section>
+
+<section class="score-visualization reader-width" id="score-visualization">
+  <div class="reader-heading"><span>历史服务记录 · 评分头的实际输出</span><h2>一次长请求中，哪些块得分高？</h2></div>
+  <p>2026-11-20 的一条真实服务请求：前文 43,715 token，分成 171 块。下图每根柱对应一个块，纵轴是评分头给的 0～1 分数；绿色块最后进入 attention 选区。</p>
+  <div class="score-stats" aria-label="这条请求的评分概况"><div><strong>171</strong><span>前文块</span></div><div><strong>38</strong><span>得分 ≥ 0.5</span></div><div><strong>12</strong><span>按分数入选</span></div><div><strong id="score-selected-tokens">—</strong><span>选中 token</span></div></div>
+  <figure class="score-figure"><figcaption>从前文开头到末尾 · 逐块重要性分数</figcaption><div class="score-chart-wrap"><svg id="score-chart" viewBox="0 0 920 290" role="img" aria-label="171 个块的实际重要性分数柱状图，横轴为前文中的块序号，纵轴从 0 到 1。绿色为入选，棕色为过线但受 12 块上限限制，灰色为未过线。"></svg></div><small class="score-scroll-hint">左右滑动，可查看全部 171 块。</small><div class="score-legend"><span><i class="selected"></i>入选 12 块</span><span><i class="eligible"></i>过线但未入选 26 块</span><span><i class="below"></i>低于 0.5 的 133 块</span></div></figure>
+  <label class="score-inspect-label" for="score-inspect">选一块，查看它的实际分数 <input type="range" id="score-inspect" min="0" max="170" step="1" value="14"></label>
+  <p class="score-inspector" id="score-inspector" aria-live="polite"></p>
+  <p class="score-caveat">这组是服务保存的一次请求评分记录；未关联评测题号或解题结果，不能据此判断选区是否正确、attention 提升多少，或 SWE-bench 得分。原始对话内容未公开。</p>
 </section>
 
 <section class="qkv-walk reader-width" id="qkv">
@@ -873,6 +912,11 @@ window.REAL_PROBE = {"label":"2026-11-18 · GPU 0 · 合成工具协议探针 ·
 
 </script>
 <script>
+/* Numeric-only excerpt of one stored score-head request; no prompt text. */
+window.EVALUATION_SCORE_SAMPLE = {"prompt_tokens":43715,"scores":[0.17997390031814575,0.14488863945007324,0.09104663878679276,0.06258517503738403,0.0999230295419693,0.06513994187116623,0.06993166357278824,0.0828823372721672,0.06922697275876999,0.057368140667676926,0.13070715963840485,0.3462524116039276,0.1668393611907959,0.7239428162574768,0.8589851260185242,0.7068321704864502,0.3335837721824646,0.2576727271080017,0.18463489413261414,0.15472282469272614,0.15794254839420319,0.5319133996963501,0.6489213109016418,0.7361916303634644,0.6204496622085571,0.3522006571292877,0.22728900611400604,0.5346825122833252,0.45203447341918945,0.5778723955154419,0.19998297095298767,0.1589829921722412,0.13310229778289795,0.12491199374198914,0.095220185816288,0.17496357858181,0.11618465185165405,0.10709945857524872,0.10016655176877975,0.08147048205137253,0.1708449125289917,0.09517878293991089,0.09346646070480347,0.0804310292005539,0.0726274847984314,0.08098211884498596,0.06755999475717545,0.09066514670848846,0.10192589461803436,0.09644240140914917,0.08042876422405243,0.06632047891616821,0.07312294095754623,0.08372939378023148,0.07279619574546814,0.06956472992897034,0.09656158089637756,0.2504688799381256,0.1924515962600708,0.19963978230953217,0.15654775500297546,0.160403311252594,0.10918936878442764,0.08517629653215408,0.0697391927242279,0.06803838163614273,0.10898323357105255,0.1813415288925171,0.11153537780046463,0.35453030467033386,0.11130084842443466,0.10132136940956116,0.08803882449865341,0.08042045682668686,0.15841421484947205,0.23834063112735748,0.45504623651504517,0.5057445764541626,0.374108225107193,0.3107440769672394,0.16565202176570892,0.10236874967813492,0.2228802889585495,0.21082434058189392,0.24551823735237122,0.20245575904846191,0.37806236743927,0.19066175818443298,0.16643080115318298,0.1113140806555748,0.10635226219892502,0.11584746837615967,0.1329810619354248,0.2982371747493744,0.1812523603439331,0.1930796205997467,0.14328670501708984,0.12435168027877808,0.0931699126958847,0.07654022425413132,0.07297839969396591,0.09619270265102386,0.08971408009529114,0.09098252654075623,0.15362414717674255,0.1069214716553688,0.12421728670597076,0.1506880223751068,0.12011749297380447,0.2612312436103821,0.21004846692085266,0.1751192957162857,0.08719634264707565,0.09919656068086624,0.08431826531887054,0.11518304795026779,0.12707221508026123,0.42131516337394714,0.33835187554359436,0.5917685627937317,0.42614030838012695,0.4959486722946167,0.6020634770393372,0.284102201461792,0.3892268240451813,0.24248574674129486,0.34224963188171387,0.6980792284011841,0.35334208607673645,0.25905922055244446,0.26492586731910706,0.1628493219614029,0.17110727727413177,0.36215299367904663,0.5373203754425049,0.5936554670333862,0.668674647808075,0.4744918644428253,0.4459047317504883,0.29380863904953003,0.37558162212371826,0.5772696733474731,0.3504927456378937,0.2550885081291199,0.09585452824831009,0.18177196383476257,0.10925089567899704,0.07787113636732101,0.08367706090211868,0.5700781941413879,0.7738368511199951,0.6307993531227112,0.7171128988265991,0.762305498123169,0.6215459704399109,0.8230898976325989,0.7353464365005493,0.6060081124305725,0.6748659610748291,0.6049155592918396,0.546012818813324,0.7260589599609375,0.5342438817024231,0.5004803538322449,0.4155060350894928,0.501309871673584,0.7149783372879028,0.5070354342460632,0.5192001461982727,0.5097546577453613,0.7214608192443848],"blocks":[{"start":0,"end":256},{"start":256,"end":512},{"start":512,"end":768},{"start":768,"end":1024},{"start":1024,"end":1280},{"start":1280,"end":1536},{"start":1536,"end":1792},{"start":1792,"end":2048},{"start":2048,"end":2304},{"start":2304,"end":2560},{"start":2560,"end":2816},{"start":2816,"end":3072},{"start":3072,"end":3328},{"start":3328,"end":3584},{"start":3584,"end":3840},{"start":3840,"end":4096},{"start":4096,"end":4352},{"start":4352,"end":4608},{"start":4608,"end":4864},{"start":4864,"end":5120},{"start":5120,"end":5376},{"start":5376,"end":5632},{"start":5632,"end":5888},{"start":5888,"end":6144},{"start":6144,"end":6400},{"start":6400,"end":6656},{"start":6656,"end":6912},{"start":6912,"end":7168},{"start":7168,"end":7424},{"start":7424,"end":7680},{"start":7680,"end":7936},{"start":7936,"end":8192},{"start":8192,"end":8448},{"start":8448,"end":8704},{"start":8704,"end":8960},{"start":8960,"end":9216},{"start":9216,"end":9472},{"start":9472,"end":9728},{"start":9728,"end":9984},{"start":9984,"end":10240},{"start":10240,"end":10496},{"start":10496,"end":10752},{"start":10752,"end":11008},{"start":11008,"end":11264},{"start":11264,"end":11520},{"start":11520,"end":11776},{"start":11776,"end":12032},{"start":12032,"end":12288},{"start":12288,"end":12544},{"start":12544,"end":12800},{"start":12800,"end":13056},{"start":13056,"end":13312},{"start":13312,"end":13568},{"start":13568,"end":13824},{"start":13824,"end":14080},{"start":14080,"end":14336},{"start":14336,"end":14592},{"start":14592,"end":14848},{"start":14848,"end":15104},{"start":15104,"end":15360},{"start":15360,"end":15616},{"start":15616,"end":15872},{"start":15872,"end":16128},{"start":16128,"end":16384},{"start":16384,"end":16640},{"start":16640,"end":16896},{"start":16896,"end":17152},{"start":17152,"end":17408},{"start":17408,"end":17664},{"start":17664,"end":17920},{"start":17920,"end":18176},{"start":18176,"end":18432},{"start":18432,"end":18688},{"start":18688,"end":18944},{"start":18944,"end":19200},{"start":19200,"end":19456},{"start":19456,"end":19712},{"start":19712,"end":19968},{"start":19968,"end":20224},{"start":20224,"end":20480},{"start":20480,"end":20736},{"start":20736,"end":20992},{"start":20992,"end":21248},{"start":21248,"end":21504},{"start":21504,"end":21760},{"start":21760,"end":22016},{"start":22016,"end":22272},{"start":22272,"end":22528},{"start":22528,"end":22784},{"start":22784,"end":23040},{"start":23040,"end":23296},{"start":23296,"end":23552},{"start":23552,"end":23808},{"start":23808,"end":24064},{"start":24064,"end":24320},{"start":24320,"end":24576},{"start":24576,"end":24832},{"start":24832,"end":25088},{"start":25088,"end":25344},{"start":25344,"end":25600},{"start":25600,"end":25856},{"start":25856,"end":26112},{"start":26112,"end":26368},{"start":26368,"end":26624},{"start":26624,"end":26880},{"start":26880,"end":27136},{"start":27136,"end":27392},{"start":27392,"end":27648},{"start":27648,"end":27904},{"start":27904,"end":28160},{"start":28160,"end":28416},{"start":28416,"end":28672},{"start":28672,"end":28928},{"start":28928,"end":29184},{"start":29184,"end":29440},{"start":29440,"end":29696},{"start":29696,"end":29952},{"start":29952,"end":30208},{"start":30208,"end":30464},{"start":30464,"end":30720},{"start":30720,"end":30976},{"start":30976,"end":31232},{"start":31232,"end":31488},{"start":31488,"end":31744},{"start":31744,"end":32000},{"start":32000,"end":32256},{"start":32256,"end":32512},{"start":32512,"end":32768},{"start":32768,"end":33024},{"start":33024,"end":33280},{"start":33280,"end":33536},{"start":33536,"end":33792},{"start":33792,"end":34048},{"start":34048,"end":34304},{"start":34304,"end":34560},{"start":34560,"end":34816},{"start":34816,"end":35072},{"start":35072,"end":35328},{"start":35328,"end":35584},{"start":35584,"end":35840},{"start":35840,"end":36096},{"start":36096,"end":36352},{"start":36352,"end":36608},{"start":36608,"end":36864},{"start":36864,"end":37120},{"start":37120,"end":37376},{"start":37376,"end":37632},{"start":37632,"end":37888},{"start":37888,"end":38144},{"start":38144,"end":38400},{"start":38400,"end":38656},{"start":38656,"end":38912},{"start":38912,"end":39168},{"start":39168,"end":39424},{"start":39424,"end":39680},{"start":39680,"end":39936},{"start":39936,"end":40192},{"start":40192,"end":40448},{"start":40448,"end":40704},{"start":40704,"end":40960},{"start":40960,"end":41216},{"start":41216,"end":41472},{"start":41472,"end":41728},{"start":41728,"end":41984},{"start":41984,"end":42240},{"start":42240,"end":42496},{"start":42496,"end":42752},{"start":42752,"end":43008},{"start":43008,"end":43264},{"start":43264,"end":43520},{"start":43520,"end":43715}],"selected_blocks":[14,155,150,153,23,156,161,13,170,152,166,15],"threshold":0.5,"maximum_blocks":12,"selection_source":"trained_matching_salience_head","head_dtype":"torch.float32","native_fp8_gpu_forward_executed":true};
+
+</script>
+<script>
 /* Teaching values are explicit examples. Real scores remain isolated in REAL_PROBE. */
 (() => {
   'use strict';
@@ -959,6 +1003,45 @@ window.REAL_PROBE = {"label":"2026-11-18 · GPU 0 · 合成工具协议探针 ·
   }
   for(const button of document.querySelectorAll('[data-bridge-score]'))button.addEventListener('click',()=>renderBridge(Number(button.dataset.bridgeScore)));
   renderBridge(.9);
+
+  // Stored numeric scores from one real request. The chart is not an attention-weight trace.
+  const scoreSample=window.EVALUATION_SCORE_SAMPLE;
+  if(scoreSample){
+    const scores=scoreSample.scores, blocks=scoreSample.blocks, selected=new Set(scoreSample.selected_blocks);
+    const verified=selectBlocks(scores,blocks,scoreSample.threshold,scoreSample.maximum_blocks);
+    if(scores.length!==blocks.length||verified.chosen.join(',')!==scoreSample.selected_blocks.join(','))throw Error('Stored score selection mismatch');
+    $('#score-selected-tokens').textContent=fmt(verified.tokens);
+    const svg=$('#score-chart'), svgNS='http://www.w3.org/2000/svg', left=49, top=15, plotWidth=852, plotHeight=220;
+    const node=(tag,attrs,parent=svg)=>{const el=document.createElementNS(svgNS,tag);for(const [key,value] of Object.entries(attrs))el.setAttribute(key,String(value));parent.append(el);return el;};
+    for(const [value,label] of [[1,'1.0'],[.5,'0.5'],[0,'0']]){
+      const y=top+(1-value)*plotHeight;
+      node('line',{x1:left,y1:y,x2:left+plotWidth,y2:y,class:value===.5?'score-threshold':'score-gridline'});
+      const tick=node('text',{x:35,y:y+4,class:'score-axis-label','text-anchor':'end'});tick.textContent=label;
+    }
+    for(const i of [0,42,85,128,170]){
+      const x=left+(i+.5)*plotWidth/scores.length;
+      const tick=node('text',{x,y:top+plotHeight+23,class:'score-axis-label','text-anchor':'middle'});tick.textContent=i;
+    }
+    const bars=scores.map((score,i)=>{
+      const x=left+i*plotWidth/scores.length+0.45, height=score*plotHeight;
+      const category=selected.has(i)?'selected':score>=scoreSample.threshold?'eligible':'below';
+      const bar=node('rect',{x,y:top+plotHeight-height,width:Math.max(2,plotWidth/scores.length-1),height,class:'score-bar '+category});
+      const title=node('title',{},bar);title.textContent='块 '+i+'：'+score.toFixed(4)+'，'+(category==='selected'?'入选':category==='eligible'?'过线但未入选':'未过线');
+      bar.addEventListener('pointerenter',()=>inspectScore(i));bar.addEventListener('click',()=>inspectScore(i));
+      return bar;
+    });
+    const marker=node('line',{x1:0,y1:top,x2:0,y2:top+plotHeight,class:'score-marker'});
+    function inspectScore(i){
+      $('#score-inspect').value=i;
+      const b=blocks[i], score=scores[i], state=selected.has(i)?'入选，整块 token 获得 +1 偏置':score>=scoreSample.threshold?'过线，但分数排序未进入前 12':'低于 0.5，未入选';
+      $('#score-inspector').textContent='第 '+i+' 块 · 分数 '+score.toFixed(4)+' · token ['+fmt(b.start)+', '+fmt(b.end)+') · '+state+'。';
+      for(const [index,bar] of bars.entries())bar.classList.toggle('inspected',index===i);
+      const x=left+(i+.5)*plotWidth/scores.length;marker.setAttribute('x1',x);marker.setAttribute('x2',x);
+      window.ScoreChartState={index:i,score,selected:selected.has(i),eligible:score>=scoreSample.threshold,start:b.start,end:b.end,selectedCount:selected.size,eligibleCount:scores.filter(x=>x>=scoreSample.threshold).length,selectedTokens:verified.tokens};
+    }
+    $('#score-inspect').addEventListener('input',event=>inspectScore(Number(event.target.value)));
+    inspectScore(14);
+  }
 
   // A wholly synthetic task: selections refer only to observations returned before that round.
   const issue={id:'issue',title:'Issue 约束',text:'timeout=0 应保留；缺失或 None 使用默认 30。'};
