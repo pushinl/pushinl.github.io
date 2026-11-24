@@ -689,6 +689,8 @@ SOFTWARE.
     <p class="score-content-flow">这一条请求的输入输出：<strong>43,715 个前文 token</strong> → 主模型隐藏状态 → 评分头 → <strong>171 个块分数</strong> → 选中 12 块、3,011 个 token 位置 → 指定四层在这些位置加 attention 匹配分偏置。隐藏向量和评分头内部 q/k 数值未保存，因此这里不能展示真实的 2048/128 维输入值。</p>
   </div>
   <p class="score-caveat">这是服务保存的一次请求评分记录。网页只公开经审阅的原文节选，不公开完整历史中的系统指令和工具协议。记录未关联评测题号或解题结果，不能据此判断选区是否正确、attention 提升多少，或 SWE-bench 得分。</p>
+  <p><strong>评分头的输入：</strong>前文最后位置的隐藏向量表示当前状态，块内隐藏向量的均值表示该块，另加块位置特征。<strong>输出：</strong>每块一个 0～1 分数。最后位置能看到完整可见前文，所以分数随当前请求的语境改变；较早块的表示只能看到它之前的内容，评分头也不显式两两比较所有块。</p>
+  <p><a class="animation-link" href="score-inspector.html">打开独立评分曲线：点选 171 个块，查看分数与已审阅的内容节选 →</a></p>
 </section>
 
 <section class="qkv-walk reader-width" id="qkv">
