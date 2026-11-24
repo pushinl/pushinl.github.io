@@ -371,10 +371,13 @@ SOFTWARE.
 .layer-equation>p{font-size:12px;color:var(--muted);line-height:1.95}
 .layer-equation>.math-block{font-size:23px;margin:16px 0;color:var(--green)}
 .layer-handoff>.layer-key{font-size:13px;margin-top:20px}
+.layer-refresh-note{margin-top:17px;padding:15px 18px;background:#eaf0e3;border-left:3px solid var(--green);border-radius:0 7px 7px 0}
+.layer-refresh-note>strong{font-size:13px;color:var(--green)}
+.layer-refresh-note>p{font-size:12px;line-height:1.9;margin-top:5px}
 .layer-scope{border-top:1px solid var(--line);margin-top:20px}
 .layer-scope>summary{cursor:pointer;font-size:12px;color:var(--muted);padding:15px 0;line-height:1.9}
 .layer-scope>div{padding:0 0 15px;font-size:12px;color:var(--muted);line-height:1.95}
-@media(max-width:720px){.layer-handoff{padding:28px 0 31px}.layer-handoff .reader-heading h2{font-size:22px}.layer-handoff>p{font-size:13px}.layer-passes{grid-template-columns:1fr;gap:11px}.layer-passes>div{padding:16px}.layer-passes b{font-size:13px}.layer-passes p{font-size:11px}.layer-mask>div{grid-template-columns:1fr auto;gap:2px 10px;padding:12px 5px;font-size:11px}.layer-mask span{grid-column:1;grid-row:2}.layer-mask strong{grid-column:2;grid-row:1 / 3}.layer-targets{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.layer-targets>div{padding:14px}.layer-targets>div>b{font-size:18px}.layer-targets p{font-size:11px}.layer-equation{padding-left:14px}.layer-equation>.math-block{font-size:20px}.layer-equation>p{font-size:11px}.layer-handoff>.layer-key{font-size:12px}.layer-handoff>.layer-caption{font-size:10px}.layer-scope>summary,.layer-scope>div{font-size:11px}}
+@media(max-width:720px){.layer-handoff{padding:28px 0 31px}.layer-handoff .reader-heading h2{font-size:22px}.layer-handoff>p{font-size:13px}.layer-passes{grid-template-columns:1fr;gap:11px}.layer-passes>div{padding:16px}.layer-passes b{font-size:13px}.layer-passes p{font-size:11px}.layer-mask>div{grid-template-columns:1fr auto;gap:2px 10px;padding:12px 5px;font-size:11px}.layer-mask span{grid-column:1;grid-row:2}.layer-mask strong{grid-column:2;grid-row:1 / 3}.layer-targets{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.layer-targets>div{padding:14px}.layer-targets>div>b{font-size:18px}.layer-targets p{font-size:11px}.layer-equation{padding-left:14px}.layer-equation>.math-block{font-size:20px}.layer-equation>p{font-size:11px}.layer-handoff>.layer-key{font-size:12px}.layer-handoff>.layer-caption{font-size:10px}.layer-refresh-note{padding:12px 14px}.layer-refresh-note>p{font-size:11px}.layer-scope>summary,.layer-scope>div{font-size:11px}}
 @media(max-width:360px){.layer-handoff .reader-heading h2{font-size:20px}.layer-handoff>p{font-size:12px}.layer-equation>.math-block{font-size:18px}}
 @media print{.layer-passes>div,.layer-targets>div{break-inside:avoid;print-color-adjust:exact}.layer-equation{break-inside:avoid}}
 
@@ -587,8 +590,20 @@ SOFTWARE.
 .score-inspect-label{display:block;font-size:12px;font-weight:600;color:var(--green);margin:19px 0 8px}
 .score-inspect-label input{display:block;width:min(100%,620px);margin-top:11px;accent-color:var(--green)}
 .score-visualization>.score-inspector{font-size:13px;color:var(--ink);font-variant-numeric:tabular-nums;background:#e9f1e3;padding:12px 15px;border-radius:6px}
+.score-content-panel{margin-top:17px;padding:20px;border:1px solid var(--line);border-radius:9px;background:#fffefa}
+.score-content-panel h3{font-size:17px;margin-bottom:7px}
+.score-content-panel>p{font-size:12px;color:var(--muted);line-height:1.85}
+.score-example-buttons{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+.score-example-buttons button{font-size:11px;padding:7px 10px;border-radius:5px}
+.score-example-buttons button[aria-pressed="true"]{background:var(--green);color:white;border-color:var(--green)}
+.score-content-result{border:1px solid #dce5d8;border-radius:7px;overflow:hidden}
+.score-content-result b{display:block;background:#edf2e9;padding:9px 13px;font-size:12px}
+.score-content-result pre{white-space:pre-wrap;overflow-wrap:anywhere;overflow-x:auto;margin:0;padding:13px;font:12px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;max-height:250px;overflow-y:auto}
+.score-content-panel>.score-content-flow{margin-top:14px}
 .score-visualization>.score-caveat{font-size:11px;margin-top:14px;color:var(--muted)}
-@media(max-width:720px){.score-visualization{padding:28px 0 31px}.score-visualization .reader-heading h2{font-size:22px}.score-visualization>p{font-size:11px}.score-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.score-stats strong{font-size:19px}.score-figure{padding:12px}.score-chart-wrap{margin-right:-2px}.score-scroll-hint{display:block;font-size:10px;color:var(--green);margin-top:4px}.score-legend{margin-left:0;font-size:10px}.score-inspect-label{font-size:11px}.score-visualization>.score-inspector{font-size:11px}}
+.animation-link{display:inline-block;margin-top:17px;padding:10px 15px;border:1px solid var(--green);border-radius:6px;text-decoration:none;color:var(--green);font-size:12px;font-weight:650}
+.animation-link:hover{background:#e0efe0}
+@media(max-width:720px){.score-visualization{padding:28px 0 31px}.score-visualization .reader-heading h2{font-size:22px}.score-visualization>p{font-size:11px}.score-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.score-stats strong{font-size:19px}.score-figure{padding:12px}.score-chart-wrap{margin-right:-2px}.score-scroll-hint{display:block;font-size:10px;color:var(--green);margin-top:4px}.score-legend{margin-left:0;font-size:10px}.score-inspect-label{font-size:11px}.score-visualization>.score-inspector{font-size:11px}.score-content-panel{padding:14px}.score-content-panel h3{font-size:15px}.score-content-panel>p{font-size:11px}.score-content-result pre{font-size:10px}}
 @media print{.score-bar,.score-stats>div{print-color-adjust:exact}.score-chart-wrap{overflow:visible}#score-chart{min-width:0}}
 
 </style>
@@ -608,6 +623,7 @@ SOFTWARE.
   <div class="focus-summary" aria-label="评分头与attention之间的连接"><span>评分头得分</span><i>→</i><b>选中标记 0 / 1</b><i>→</i><span>匹配分 + 标记 × 1</span><i>→</i><b>新 attention 权重</b></div>
   <p class="focus-key">生成时真正用到的是<strong>位置标记</strong>。评分头的 0.9 不会直接变成 90% 的 attention。</p>
   <p class="focus-key"><strong>“匹配分”是什么？</strong>生成中的模型会计算：当前这一步与每个历史 token 有多相关。这些分数转成比例，才是 attention 权重；它们与评分头的“重要性分数”是两种不同的数。</p>
+  <a class="animation-link" href="animation.html">▶ 用动画看完整流程：训练 → 评分 → 选块 → 推理 → 工具回传 ↗</a>
 </section>
 
 <section class="model-structure reader-width" id="model-structure">
@@ -652,6 +668,7 @@ SOFTWARE.
   <p class="layer-caption">代码层号从 0 开始。这是最后四个 full attention 层；其他层沿用原生计算。上方切换 B 的得分，这里的标记与加分同步变化。</p>
   <div class="layer-equation"><p>在这四层，对当前用于预测下一个 token 的 query：</p><span class="math-expression math-block" data-math-source="s_{tj}^{(\ell)\prime}=s_{tj}^{(\ell)}+\lambda m_j"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msubsup><mi>s</mi><mrow><mi>t</mi><mi>j</mi></mrow><mrow><mo stretchy="false">(</mo><mi mathvariant="normal">ℓ</mi><mo stretchy="false">)</mo><mo mathvariant="normal">′</mo></mrow></msubsup><mo>=</mo><msubsup><mi>s</mi><mrow><mi>t</mi><mi>j</mi></mrow><mrow><mo stretchy="false">(</mo><mi mathvariant="normal">ℓ</mi><mo stretchy="false">)</mo></mrow></msubsup><mo>+</mo><mi>λ</mi><msub><mi>m</mi><mi>j</mi></msub></mrow><annotation encoding="application/x-tex">s_{tj}^{(\ell)\prime}=s_{tj}^{(\ell)}+\lambda m_j</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1.4578em;vertical-align:-0.413em;"></span><span class="mord"><span class="mord mathnormal">s</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0448em;"><span style="top:-2.4231em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">t</span><span class="mord mathnormal mtight" style="margin-right:0.0572em;">j</span></span></span></span><span style="top:-3.2198em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mopen mtight">(</span><span class="mord mtight">ℓ</span><span class="mclose mtight">)</span><span class="mord mtight">′</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.413em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1.4578em;vertical-align:-0.413em;"></span><span class="mord"><span class="mord mathnormal">s</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0448em;"><span style="top:-2.4231em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">t</span><span class="mord mathnormal mtight" style="margin-right:0.0572em;">j</span></span></span></span><span style="top:-3.2198em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mopen mtight">(</span><span class="mord mtight">ℓ</span><span class="mclose mtight">)</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.413em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord mathnormal">λ</span><span class="mord"><span class="mord mathnormal">m</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0572em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span></span></span><p>ℓ 是当前层，j 是历史 token 位置；m 为选中标记，当前 λ = 1。加分后，各层分别做 softmax，再按新权重汇总 V。</p></div>
   <p class="layer-key"><strong>四层共享“选哪些位置”，各层独立计算 attention。</strong>每层的 Q/K/V 不同，原始匹配分也不同，所以最终权重各不相同；同一块内的 token 也只共享加分幅度。</p>
+  <div class="layer-refresh-note"><strong>生成过程中，什么会变？</strong><p>每输出一个 token，当前 Q 会变化，Q·K 与 softmax 权重会重新计算；但本次请求的块分数、选区和统一的 +1 偏置不刷新。比如从 <code>aaaaabbbbbccccc → d</code> 继续到 <code>aaaaabbbbbcccccddddddd → e</code>，两步的 attention 权重可以不同，评分头选中的历史块仍是同一批。新生成的内容要等下一次请求（例如工具结果回传后）才会参与重新评分。这是当前实现对动态重要性的一项限制。</p></div>
   <details class="layer-scope"><summary>加在哪一步？工具结果回来后会怎样？（可选）</summary><div><p>实际生成的前缀阶段，只修正最后一个前文位置对应的 query 行；随后每个 decode 步修正当前 query 行，并非重写历史全部 query 行。四层的改动会通过后续网络影响输出。</p><p>工具结果回传、发起下一次请求时，服务对更新后的完整前文重新评分、重新选位置。这里的“256”是评分块大小，生成仍按 token 推进。</p></div></details>
   <a class="focus-softmax-link" href="#qkv">接着看：每一层的 Q/K/V 与原始匹配分怎样产生 ↓</a>
 </section>
@@ -663,7 +680,14 @@ SOFTWARE.
   <figure class="score-figure"><figcaption>从前文开头到末尾 · 逐块重要性分数</figcaption><div class="score-chart-wrap"><svg id="score-chart" viewBox="0 0 920 290" role="img" aria-label="171 个块的实际重要性分数柱状图，横轴为前文中的块序号，纵轴从 0 到 1。绿色为入选，棕色为过线但受 12 块上限限制，灰色为未过线。"></svg></div><small class="score-scroll-hint">左右滑动，可查看全部 171 块。</small><div class="score-legend"><span><i class="selected"></i>入选 12 块</span><span><i class="eligible"></i>过线但未入选 26 块</span><span><i class="below"></i>低于 0.5 的 133 块</span></div></figure>
   <label class="score-inspect-label" for="score-inspect">选一块，查看它的实际分数 <input type="range" id="score-inspect" min="0" max="170" step="1" value="14"></label>
   <p class="score-inspector" id="score-inspector" aria-live="polite"></p>
-  <p class="score-caveat">这组是服务保存的一次请求评分记录；未关联评测题号或解题结果，不能据此判断选区是否正确、attention 提升多少，或 SWE-bench 得分。原始对话内容未公开。</p>
+  <div class="score-content-panel">
+    <h3>这几块实际写了什么？</h3>
+    <p>点下面的块，柱状图、分数和原文节选会一起切换。评分头处理的是<strong>整块的隐藏向量</strong>，不是直接读这段文字；分数也属于完整块，不是单独给节选打的。</p>
+    <div class="score-example-buttons" role="group" aria-label="查看已审阅的原文节选"><button type="button" data-score-example="14">问题描述 · 块 14</button><button type="button" data-score-example="155">相关源码 · 块 155</button><button type="button" data-score-example="166">测试结果 · 块 166</button><button type="button" data-score-example="100">其他文档 · 块 100</button></div>
+    <div class="score-content-result"><b id="score-content-label"></b><pre id="score-content-text"></pre></div>
+    <p class="score-content-flow">这一条请求的输入输出：<strong>43,715 个前文 token</strong> → 主模型隐藏状态 → 评分头 → <strong>171 个块分数</strong> → 选中 12 块、3,011 个 token 位置 → 指定四层在这些位置加 attention 匹配分偏置。隐藏向量和评分头内部 q/k 数值未保存，因此这里不能展示真实的 2048/128 维输入值。</p>
+  </div>
+  <p class="score-caveat">这是服务保存的一次请求评分记录。网页只公开经审阅的原文节选，不公开完整历史中的系统指令和工具协议。记录未关联评测题号或解题结果，不能据此判断选区是否正确、attention 提升多少，或 SWE-bench 得分。</p>
 </section>
 
 <section class="qkv-walk reader-width" id="qkv">
@@ -917,6 +941,11 @@ window.EVALUATION_SCORE_SAMPLE = {"prompt_tokens":43715,"scores":[0.179973900318
 
 </script>
 <script>
+/* Reviewed literal excerpts; each score belongs to the complete 256-token block. */
+window.EVALUATION_SCORE_EXCERPTS = {"14":{"label":"问题中的返回值","text":"SymPy 1.9 and under outputs:\r\n```\r\n'def _lambdifygenerated():\\n    return (1,)\\n'\r\n```\r\n\r\nBut SymPy 1.10 gives\r\n\r\n```\r\n'def _lambdifygenerated():\\n    return (1)\\n'\r\n```\r\nNote the missing comma after `1` that causes an integer to be returned instead of a tuple."},"155":{"label":"工具读到的源码","text":"960\t        elif isinstance(arg, tuple):\n961\t            left, right = \"()\""},"166":{"label":"工具返回的测试结果","text":"============ tests finished: 63 passed, 54 skipped, in 0.65 seconds ============"},"100":{"label":"其他库的文档片段","text":"449\t    >>> var = tf.Variable(2.0)\n450\t    >>> result = func(var) # also works for tf.Variable and tf.Placeholder\n451\t    >>> result.numpy()"}};
+
+</script>
+<script>
 /* Teaching values are explicit examples. Real scores remain isolated in REAL_PROBE. */
 (() => {
   'use strict';
@@ -1008,6 +1037,8 @@ window.EVALUATION_SCORE_SAMPLE = {"prompt_tokens":43715,"scores":[0.179973900318
   const scoreSample=window.EVALUATION_SCORE_SAMPLE;
   if(scoreSample){
     const scores=scoreSample.scores, blocks=scoreSample.blocks, selected=new Set(scoreSample.selected_blocks);
+    const excerpts=window.EVALUATION_SCORE_EXCERPTS;
+    if(!excerpts||Object.keys(excerpts).length!==4)throw Error('Reviewed score excerpts are missing');
     const verified=selectBlocks(scores,blocks,scoreSample.threshold,scoreSample.maximum_blocks);
     if(scores.length!==blocks.length||verified.chosen.join(',')!==scoreSample.selected_blocks.join(','))throw Error('Stored score selection mismatch');
     $('#score-selected-tokens').textContent=fmt(verified.tokens);
@@ -1035,11 +1066,16 @@ window.EVALUATION_SCORE_SAMPLE = {"prompt_tokens":43715,"scores":[0.179973900318
       $('#score-inspect').value=i;
       const b=blocks[i], score=scores[i], state=selected.has(i)?'入选，整块 token 获得 +1 偏置':score>=scoreSample.threshold?'过线，但分数排序未进入前 12':'低于 0.5，未入选';
       $('#score-inspector').textContent='第 '+i+' 块 · 分数 '+score.toFixed(4)+' · token ['+fmt(b.start)+', '+fmt(b.end)+') · '+state+'。';
+      const excerpt=excerpts[i];
+      $('#score-content-label').textContent=excerpt?excerpt.label+' · 第 '+i+' 块 · 完整块分数 '+score.toFixed(4):'第 '+i+' 块 · 原文未在公开页展示';
+      $('#score-content-text').textContent=excerpt?excerpt.text:'可点击上方四个示例，查看已审阅的真实原文节选。';
+      for(const button of document.querySelectorAll('[data-score-example]'))button.setAttribute('aria-pressed',String(Number(button.dataset.scoreExample)===i));
       for(const [index,bar] of bars.entries())bar.classList.toggle('inspected',index===i);
       const x=left+(i+.5)*plotWidth/scores.length;marker.setAttribute('x1',x);marker.setAttribute('x2',x);
       window.ScoreChartState={index:i,score,selected:selected.has(i),eligible:score>=scoreSample.threshold,start:b.start,end:b.end,selectedCount:selected.size,eligibleCount:scores.filter(x=>x>=scoreSample.threshold).length,selectedTokens:verified.tokens};
     }
     $('#score-inspect').addEventListener('input',event=>inspectScore(Number(event.target.value)));
+    for(const button of document.querySelectorAll('[data-score-example]'))button.addEventListener('click',()=>inspectScore(Number(button.dataset.scoreExample)));
     inspectScore(14);
   }
 
