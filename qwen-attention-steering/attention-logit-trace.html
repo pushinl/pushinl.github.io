@@ -18,7 +18,7 @@
 </head>
 <body>
 <main class="shell">
-  <nav><a href="./">← 完整讲解</a><a href="score-inspector.html">171 块评分与内容</a><a href="request-timeline.html">Agent 请求时间线</a></nav>
+  <nav><a href="./">← 完整讲解</a><a href="score-to-attention.html">评分头到 attention 动画</a><a href="score-inspector.html">171 块评分与内容</a><a href="request-timeline.html">Agent 请求时间线</a></nav>
   <p class="eyebrow">同一真实评测请求 · 逐 token 注意力诊断</p>
   <h1>原始 QK 分数有十几，<br>再加 1 真的有用吗？</h1>
   <p class="lead">有。这是保存的 43,715-token 评测请求在空闲 GPU 上的隔离重放。对首个生成查询，记录第 27、31、35、39 层的第 0 个 attention head：每个历史 token 的原始 Q·K/√dₖ、被选中后加 1 的分数，以及对<strong>全部 43,715 个位置</strong>做 softmax 后的注意力占比。</p>
