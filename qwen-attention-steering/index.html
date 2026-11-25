@@ -691,6 +691,7 @@ SOFTWARE.
   <p class="score-caveat">这是服务保存的一次请求评分记录。本节展示四段经审阅的节选；独立曲线页可逐块查看任务与工具输出的实际文本，系统消息、工具定义和模型内部思考已遮盖。记录未关联评测题号或解题结果，不能据此判断选区是否正确、attention 提升多少，或 SWE-bench 得分。</p>
   <p><strong>评分头的输入：</strong>前文最后位置的隐藏向量表示当前状态，块内隐藏向量的均值表示该块，另加块位置特征。<strong>输出：</strong>每块一个 0～1 分数。最后位置能看到完整可见前文，所以分数随当前请求的语境改变；较早块的表示只能看到它之前的内容，评分头也不显式两两比较所有块。</p>
   <p><a class="animation-link" href="score-inspector.html">打开独立评分曲线：点选 171 个块，查看分数与实际块文本 →</a></p>
+  <p><a class="animation-link" href="score-to-attention.html">▶ 看逐步动画：评分头公式怎样变成 QK +1，再对照真实 attention 曲线 →</a></p>
   <p><a class="animation-link" href="attention-logit-trace.html">查看真实 QK 匹配分与 +1 后的逐 token 曲线：四层 attention 与 softmax 占比 →</a></p>
 </section>
 
