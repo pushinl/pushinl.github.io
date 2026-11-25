@@ -31,7 +31,7 @@
   <p class="lead" style="font-size:.96rem;margin-top:-12px">先看默认的块 14：token 3818 的真实原始匹配分约 14.381，加权后约 15.381；它的全前文 attention 占比从约 1.03% 升到 1.48%。下方曲线已定位到这个位置。</p>
   <section class="card formula" aria-label="从 QK 到 attention 的计算">
     <h2>看懂这两条曲线，只需要三步</h2>
-    <div class="steps"><div class="step"><b>1. 原始匹配分</b><code>zⱼ = Qₜ · Kⱼ / √256</code></div><div class="step"><b>2. 给选中位置加 1</b><code>z′ⱼ = zⱼ + 1；未选中则不变</code></div><div class="step"><b>3. 对全前文归一化</b><code>pⱼ = eᶻⱼ / Σᵢ eᶻⁱ</code></div></div>
+    <div class="steps"><div class="step"><b>1. 原始匹配分</b><code>zⱼ = Qₜ · Kⱼ / √256</code></div><div class="step"><b>2. 给选中位置加 1</b><code>z′ⱼ = zⱼ + 1；未选中则不变</code></div><div class="step"><b>3. 对全前文归一化</b><code>pⱼ = eᶻⱼ / Σᵢ eᶻⁱ<br>p′ⱼ = eᶻ′ⱼ / Σᵢ eᶻ′ⁱ</code></div></div>
     <p><strong>+1 的作用取决于相对差值，不取决于原始分是不是很大。</strong>同一查询里，一个入选 token 相对一个未入选 token 的未归一化权重比会乘以 e ≈ 2.718。若入选区域原本已经占据几乎 100%，最终总占比才会因饱和而变化较小。</p>
   </section>
   <section class="card controls" aria-label="选择层和块">
