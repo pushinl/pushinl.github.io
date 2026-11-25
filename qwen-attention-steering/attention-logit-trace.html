@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>真实 QK 匹配分与 +1 曲线 · Attention Steering</title>
+  <meta name="description" content="隔离重放一条真实评测请求，逐 token 查看四层 attention head 的原始 QK/√dₖ、加 +1 后的匹配分和 softmax 占比。">
+  <style>
+    :root{font-family:Inter,"Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;color:#182b28;background:#f4f6f0;font-synthesis:none}
+    *{box-sizing:border-box}body{margin:0;line-height:1.55}a{color:#176b60}a:hover{text-decoration-thickness:2px}button,select,input{font:inherit}.shell{max-width:1240px;margin:auto;padding:22px clamp(16px,3vw,38px) 70px}
+    nav{display:flex;gap:18px;align-items:center;flex-wrap:wrap;font-size:.9rem}nav a{text-decoration:none;font-weight:700}.eyebrow{font-size:.82rem;color:#167766;font-weight:800;letter-spacing:.08em;margin:42px 0 8px}h1{font-size:clamp(2.1rem,5vw,4.4rem);line-height:1.13;letter-spacing:-.05em;max-width:920px;margin:0 0 17px}h2{font-size:clamp(1.25rem,2vw,1.6rem);line-height:1.3;margin:0 0 6px;letter-spacing:-.025em}.lead{font-size:clamp(1rem,1.5vw,1.17rem);color:#50635b;max-width:930px;margin:0 0 26px}.card{background:#fff;border:1px solid #dce6dd;border-radius:19px;box-shadow:0 9px 25px #224a3610}.hero-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin:27px 0}.metric{padding:18px 20px}.metric b{display:block;font-size:clamp(1.35rem,2.5vw,2.05rem);line-height:1.2;letter-spacing:-.04em;font-variant-numeric:tabular-nums}.metric span{font-size:.84rem;color:#61766c}.metric.emphasis{background:#e9f6ed;border-color:#b4dfc2}
+    .formula{padding:22px 25px;margin:15px 0 22px}.formula .steps{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin:14px 0 12px}.formula .step{background:#f2f7f1;padding:12px 15px;border-radius:10px;flex:1 1 215px}.formula .step b,.formula .step code{display:block}.formula .step b{font-size:.82rem;color:#557067}.formula .step code{font-size:clamp(.9rem,1.5vw,1.04rem);white-space:normal;font-variant-numeric:tabular-nums}.formula p{color:#52675e;margin:7px 0 0}.formula strong{color:#174b3c}
+    .controls{padding:20px 22px;margin-bottom:14px}.control-row{display:grid;grid-template-columns:minmax(150px,230px) minmax(150px,230px) 1fr;gap:14px;align-items:end}.control-row label{display:block;font-weight:750;font-size:.88rem;margin-bottom:6px}.control-row select,.control-row input[type=number]{width:100%;padding:9px 11px;border:1px solid #bdcfc3;border-radius:9px;background:#fff;color:#1f3a32}.control-row input[type=range]{width:100%;accent-color:#147b68;margin:11px 0 5px}.control-row .range-label{display:flex;justify-content:space-between;font-size:.8rem;color:#607369}.quick{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.quick button{background:#ecf4ec;color:#24624e;border:1px solid #c9dfd0;border-radius:8px;padding:7px 10px;cursor:pointer;font-size:.86rem;font-weight:700}.quick button:hover,.quick button.active{background:#167965;border-color:#167965;color:#fff}
+    .block-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0 17px;color:#52685c;font-size:.9rem}.pill{border-radius:999px;padding:3px 10px;font-size:.78rem;font-weight:750}.pill.yes{background:#cdeedc;color:#155c47}.pill.no{background:#e8edeb;color:#596b61}.plots{display:grid;grid-template-columns:1fr;gap:14px}.plot-card{padding:20px 22px}.plot-card header{display:flex;justify-content:space-between;gap:14px;align-items:baseline;flex-wrap:wrap}.plot-card header p{color:#62746b;margin:0 0 8px;font-size:.89rem}.chart-scroll{overflow-x:auto}.chart-scroll svg{display:block;width:100%;min-width:680px;height:auto;touch-action:pan-x}.legend{display:flex;gap:17px;align-items:center;flex-wrap:wrap;color:#4f665b;font-size:.82rem;margin-top:4px}.legend i{display:inline-block;width:22px;height:0;border-top:3px solid;vertical-align:middle;margin-right:5px}.readout{display:flex;gap:9px;flex-wrap:wrap;background:#f4f8f2;border-radius:10px;margin-top:11px;padding:10px 13px;font-size:.85rem;font-variant-numeric:tabular-nums}.readout span{padding-right:12px;border-right:1px solid #d8e5d8}.readout span:last-child{border:0}.readout b{color:#1c4e3d}.explain-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}.explain-grid .card{padding:22px}.explain-grid p{margin:8px 0 0;color:#52655d}.mass-table{width:100%;border-collapse:collapse;font-size:.91rem;margin-top:14px}.mass-table th,.mass-table td{padding:9px 10px;border-bottom:1px solid #e2eae2;text-align:right;font-variant-numeric:tabular-nums}.mass-table th:first-child,.mass-table td:first-child{text-align:left}.mass-table tr.current{background:#eaf6ed}.mass-table tbody tr{cursor:pointer}.mass-table tbody tr:hover{background:#f2f8f1}.note{background:#fff7e9;border-left:4px solid #d49335;padding:13px 16px;border-radius:0 10px 10px 0;margin-top:17px;color:#664b24}footer{margin-top:27px;color:#62756b;font-size:.84rem}footer p{margin:8px 0}.error{padding:20px;background:#fff3ed;border-radius:10px;color:#773d25}
+    @media(max-width:790px){.hero-metrics{grid-template-columns:repeat(2,1fr)}.control-row{grid-template-columns:1fr 1fr}.control-row>div:last-child{grid-column:1/-1}.explain-grid{grid-template-columns:1fr}}@media(max-width:490px){.hero-metrics{gap:7px}.metric{padding:13px}.control-row{grid-template-columns:1fr}.control-row>div:last-child{grid-column:auto}.plot-card{padding:16px}.shell{padding-top:15px}}
+  </style>
+</head>
+<body>
+<main class="shell">
+  <nav><a href="./">← 完整讲解</a><a href="score-inspector.html">171 块评分与内容</a><a href="request-timeline.html">Agent 请求时间线</a></nav>
+  <p class="eyebrow">同一真实评测请求 · 逐 token 注意力诊断</p>
+  <h1>原始 QK 分数有十几，<br>再加 1 真的有用吗？</h1>
+  <p class="lead">有。这是保存的 43,715-token 评测请求在空闲 GPU 上的隔离重放。对首个生成查询，记录第 27、31、35、39 层的第 0 个 attention head：每个历史 token 的原始 Q·K/√dₖ、被选中后加 1 的分数，以及对<strong>全部 43,715 个位置</strong>做 softmax 后的注意力占比。</p>
+  <div class="hero-metrics" aria-label="关键数值">
+    <div class="card metric"><b>15.88</b><span>第 27 层原始 QK 最大值</span></div>
+    <div class="card metric"><b>+1</b><span>入选 token 的固定 logit 增量</span></div>
+    <div class="card metric"><b id="hero-before">51.66%</b><span>入选区域加权前 attention</span></div>
+    <div class="card metric emphasis"><b id="hero-after">74.39%</b><span>入选区域加权后 attention</span></div>
+  </div>
+  <section class="card formula" aria-label="从 QK 到 attention 的计算">
+    <h2>看懂这两条曲线，只需要三步</h2>
+    <div class="steps"><div class="step"><b>1. 原始匹配分</b><code>zⱼ = Qₜ · Kⱼ / √256</code></div><div class="step"><b>2. 给选中位置加 1</b><code>z′ⱼ = zⱼ + 1；未选中则不变</code></div><div class="step"><b>3. 对全前文归一化</b><code>pⱼ = eᶻⱼ / Σᵢ eᶻⁱ</code></div></div>
+    <p><strong>+1 的作用取决于相对差值，不取决于原始分是不是很大。</strong>同一查询里，一个入选 token 相对一个未入选 token 的未归一化权重比会乘以 e ≈ 2.718。若入选区域原本已经占据几乎 100%，最终总占比才会因饱和而变化较小。</p>
+  </section>
+  <section class="card controls" aria-label="选择层和块">
+    <div class="control-row"><div><label for="layer">Attention 层 · head 0</label><select id="layer"><option value="27">第 27 层</option><option value="31">第 31 层</option><option value="35">第 35 层</option><option value="39">第 39 层</option></select></div><div><label for="block-number">前文块编号（0～170）</label><input id="block-number" type="number" min="0" max="170" value="14"></div><div><label for="block-range">拖动查看任意 256-token 块</label><input id="block-range" type="range" min="0" max="170" value="14"><div class="range-label"><span>开头</span><span>结尾</span></div></div></div>
+    <div class="quick" id="quick"><button type="button" data-block="14">块 14 · 入选</button><button type="button" data-block="155">块 155 · 入选</button><button type="button" data-block="100">块 100 · 未入选</button><button type="button" data-block="170">块 170 · 入选</button></div>
+    <div class="block-meta" id="block-meta"></div>
+  </section>
+  <div class="plots">
+    <section class="card plot-card"><header><div><h2>① 匹配分：原始 QK 与加权后</h2><p>横轴是所选块内的 token 位置；纵轴是 softmax 之前的 logit。悬停可看精确位置和数值。</p></div></header><div class="chart-scroll"><svg id="logit-chart" viewBox="0 0 920 295" role="img" aria-label="逐 token 原始匹配分和加权后匹配分曲线"></svg></div><div class="legend"><span><i style="border-color:#6a8292"></i>原始 Q·K/√dₖ</span><span><i style="border-color:#db6845"></i>当前加权后</span></div><div class="readout" id="logit-readout"></div></section>
+    <section class="card plot-card"><header><div><h2>② 注意力占比：softmax 之前与之后</h2><p>每个点都用<strong>整个 43,715-token 前文</strong>作分母；选一个 256-token 块只是放大查看。</p></div></header><div class="chart-scroll"><svg id="prob-chart" viewBox="0 0 920 295" role="img" aria-label="逐 token 注意力占比曲线"></svg></div><div class="legend"><span><i style="border-color:#6a8292"></i>同 QK、不加这一层 +1</span><span><i style="border-color:#db6845"></i>当前服务加权后</span></div><div class="readout" id="prob-readout"></div></section>
+    <section class="card plot-card"><header><div><h2>③ 全前文 171 块的 attention 占比</h2><p>每个点是该块所有 token 的占比之和。点击曲线可切换块；绿点表示入选。</p></div></header><div class="chart-scroll"><svg id="overview-chart" viewBox="0 0 920 255" role="img" aria-label="171 个块加权前后注意力占比曲线"></svg></div><div class="legend"><span><i style="border-color:#6a8292"></i>加权前</span><span><i style="border-color:#db6845"></i>加权后</span><span style="color:#178361">● 入选块</span></div></section>
+  </div>
+  <div class="explain-grid">
+    <section class="card"><h2>四层的实际变化</h2><p>同一请求、同一首个生成查询、同一 head。表中的“前”是保持该层 QK 不变，仅移除本层 +1 的对照；点击行切换图表。</p><table class="mass-table"><thead><tr><th>层</th><th>入选区域前</th><th>入选区域后</th><th>增加</th></tr></thead><tbody id="mass-table"></tbody></table></section>
+    <section class="card"><h2>为什么不被“原始分很高”淹没？</h2><p>softmax 会把所有 logit 共同平移的部分抵消。决定两个位置相对权重的是它们的差：<code>e^(z选+1) / e^z未选 = e × e^(z选-z未选)</code>。原始分是 1、10 还是 100，若两者差相同，+1 的相对作用都相同。</p><p class="note">这里选中的 3,011 个 token 一起加 1；未选中的 token 因分母变大，单点占比会下降。评分头的 0～1 分数只决定哪些块入选，<strong>不会把 0.859 之类的分数直接加到 QK 上</strong>。</p></section>
+  </div>
+  <footer><p>来源：2026-11-18 保存的一条模型服务评测请求；2026-11-25 在独立 GPU 服务重放首个生成查询。输入 token SHA-256 与历史一致，块边界、选区一致，评分最大差 5.96×10⁻⁸；四层当前加权后的选区 attention 总量与历史记录差 ≤ 1.2×10⁻⁷。原始 QK 曲线从重放服务真实计算中采集，网页数据仅保留数值，以 0.001 logit 精度编码；不含原始提示词或工具内容。</p><p>“加权前”是<strong>同一组 QK 的本层局部对照</strong>，不是另一次完整无 steering 模型推理。第 31、35、39 层的 QK 已受前面 steering 层影响；这里展示的是本层 +1 对当前查询的直接作用。此页不代表整个 SWE-bench 任务的最终成绩。<a href="score-inspector.html">查看原请求的块分数与可公开内容 →</a></p></footer>
+</main>
+<script src="evaluation-scores.js"></script>
+<script src="attention-logit-trace-data.js"></script>
+<script>
+(()=>{
+  const score=window.EVALUATION_SCORE_SAMPLE, trace=window.ATTENTION_LOGIT_TRACE;
+  if(!score||!trace||score.prompt_tokens!==trace.prompt_tokens){document.querySelector('.plots').innerHTML='<p class="error">数据加载失败，请刷新页面。</p>';return}
+  const $=id=>document.getElementById(id), selectedBlocks=new Set(score.selected_blocks), flags=new Uint8Array(trace.prompt_tokens);
+  score.selected_blocks.forEach(i=>flags.fill(1,score.blocks[i].start,score.blocks[i].end));
+  if(flags.reduce((a,b)=>a+b,0)!==trace.selected_tokens)throw Error('选中 token 数量不匹配');
+  const cache={};
+  function layerData(layer){
+    if(cache[layer])return cache[layer];
+    const meta=trace.layers[layer], bytes=atob(meta.raw_qk_milli_le_b64), raw=new Float64Array(trace.prompt_tokens);
+    if(bytes.length!==raw.length*2)throw Error('QK 数据长度错误');
+    let max=-Infinity;
+    for(let i=0;i<raw.length;i++){let n=bytes.charCodeAt(i*2)|(bytes.charCodeAt(i*2+1)<<8);if(n>=32768)n-=65536;raw[i]=n/1000;max=Math.max(max,raw[i])}
+    const before=new Float64Array(raw.length),after=new Float64Array(raw.length);let sumBefore=0,sumAfter=0;
+    for(let i=0;i<raw.length;i++){const v=Math.exp(raw[i]-max);before[i]=v;after[i]=v*(flags[i]?Math.E:1);sumBefore+=before[i];sumAfter+=after[i]}
+    for(let i=0;i<raw.length;i++){before[i]/=sumBefore;after[i]/=sumAfter}
+    const blockBefore=[],blockAfter=[];
+    for(const block of score.blocks){let a=0,b=0;for(let i=block.start;i<block.end;i++){a+=before[i];b+=after[i]}blockBefore.push(a);blockAfter.push(b)}
+    return cache[layer]={raw,before,after,blockBefore,blockAfter,meta};
+  }
+  const svgNS='http://www.w3.org/2000/svg';
+  const add=(parent,tag,attrs,text)=>{const el=document.createElementNS(svgNS,tag);for(const [k,v] of Object.entries(attrs))el.setAttribute(k,String(v));if(text!==undefined)el.textContent=text;parent.append(el);return el};
+  const pct=n=>`${(n*100).toFixed(n*100>=1?2:n*100>=.01?3:5)}%`;
+  const fmt=n=>n.toFixed(3);
+  let activeBlock=14,activeLayer='27',activeOffset=0;
+  function drawLineChart(svg,series,formatter,readout){
+    svg.replaceChildren();const n=series[0].values.length,L=64,R=900,T=18,B=246;
+    let low=Math.min(...series.flatMap(s=>s.values)),high=Math.max(...series.flatMap(s=>s.values));
+    if(high-low<1e-12){high+=1;low-=1}else{const pad=(high-low)*.08;high+=pad;low-=pad}
+    const x=i=>L+(R-L)*i/(n-1),y=v=>B-(v-low)/(high-low)*(B-T);
+    for(let t=0;t<=4;t++){const val=low+(high-low)*t/4,yy=y(val);add(svg,'line',{x1:L,x2:R,y1:yy,y2:yy,stroke:'#e1e9e0','stroke-width':1});add(svg,'text',{x:L-9,y:yy+4,'text-anchor':'end',fill:'#73837a','font-size':11},formatter(val))}
+    for(const t of [0,.25,.5,.75,1]){const i=Math.round((n-1)*t);add(svg,'text',{x:x(i),y:B+23,'text-anchor':'middle',fill:'#73837a','font-size':11},String(score.blocks[activeBlock].start+i))}
+    const paths=series.map(s=>add(svg,'path',{d:s.values.map((v,i)=>`${i?'L':'M'}${x(i).toFixed(2)},${y(v).toFixed(2)}`).join(' '),fill:'none',stroke:s.color,'stroke-width':s.width||2.3,'stroke-linejoin':'round'}));
+    const cross=add(svg,'line',{x1:0,x2:0,y1:T,y2:B,stroke:'#233c31','stroke-width':1,'stroke-dasharray':'4 4'}),dots=series.map(s=>add(svg,'circle',{cx:0,cy:0,r:4,fill:s.color,stroke:'white','stroke-width':1.5}));
+    function focus(i){i=Math.max(0,Math.min(n-1,i));cross.setAttribute('x1',x(i));cross.setAttribute('x2',x(i));dots.forEach((dot,k)=>{dot.setAttribute('cx',x(i));dot.setAttribute('cy',y(series[k].values[i]))});readout(i)}
+    const overlay=add(svg,'rect',{x:L,y:T,width:R-L,height:B-T,fill:'transparent'});
+    overlay.addEventListener('pointermove',ev=>{const box=svg.getBoundingClientRect(),v=(ev.clientX-box.left)/box.width*920;activeOffset=Math.round((v-L)/(R-L)*(n-1));focus(activeOffset)});
+    focus(Math.min(activeOffset,n-1));
+  }
+  function drawOverview(data){
+    const svg=$('overview-chart');svg.replaceChildren();const n=score.blocks.length,L=63,R=900,T=18,B=210,max=Math.max(...data.blockBefore,...data.blockAfter)*1.08;
+    const x=i=>L+(R-L)*i/(n-1),y=v=>B-v/max*(B-T);
+    for(let k=0;k<=3;k++){const val=max*k/3,yy=y(val);add(svg,'line',{x1:L,x2:R,y1:yy,y2:yy,stroke:'#e1e9e0'});add(svg,'text',{x:L-9,y:yy+4,'text-anchor':'end',fill:'#73837a','font-size':11},pct(val))}
+    for(const k of [0,32,64,96,128,170])add(svg,'text',{x:x(k),y:B+23,'text-anchor':'middle',fill:'#73837a','font-size':11},String(k));
+    for(const [values,color] of [[data.blockBefore,'#6a8292'],[data.blockAfter,'#db6845']])add(svg,'path',{d:values.map((v,i)=>`${i?'L':'M'}${x(i).toFixed(2)},${y(v).toFixed(2)}`).join(' '),fill:'none',stroke:color,'stroke-width':2.1});
+    score.selected_blocks.forEach(i=>add(svg,'circle',{cx:x(i),cy:y(data.blockAfter[i]),r:3.8,fill:'#178361',stroke:'#fff','stroke-width':1}));
+    const marker=add(svg,'line',{x1:x(activeBlock),x2:x(activeBlock),y1:T,y2:B,stroke:'#1b4b3d','stroke-width':1.5,'stroke-dasharray':'4 4'});
+    add(svg,'rect',{x:L,y:T,width:R-L,height:B-T,fill:'transparent'}).addEventListener('click',ev=>{const box=svg.getBoundingClientRect(),v=(ev.clientX-box.left)/box.width*920;setBlock(Math.round((v-L)/(R-L)*(n-1)))});
+  }
+  function update(){
+    const block=score.blocks[activeBlock],data=layerData(activeLayer),length=block.end-block.start,raw=[],boosted=[],before=[],after=[];
+    for(let i=block.start;i<block.end;i++){raw.push(data.raw[i]);boosted.push(data.raw[i]+flags[i]);before.push(data.before[i]);after.push(data.after[i])}
+    const isSelected=selectedBlocks.has(activeBlock);
+    $('block-meta').innerHTML=`<strong>块 ${activeBlock}</strong><span class="pill ${isSelected?'yes':'no'}">${isSelected?'入选 · 每个 token +1':'未入选 · 每个 token +0'}</span><span>token [${block.start}, ${block.end}) · ${length} 个</span><span>评分头 ${score.scores[activeBlock].toFixed(4)}</span><span>本块 attention ${pct(data.blockBefore[activeBlock])} → ${pct(data.blockAfter[activeBlock])}</span>`;
+    $('hero-before').textContent=pct(data.meta.selected_mass_before);$('hero-after').textContent=pct(data.meta.selected_mass_after);
+    const readout=(i)=>{$('logit-readout').innerHTML=`<span>token 位置 <b>${block.start+i}</b></span><span>原始 QK <b>${fmt(raw[i])}</b></span><span>加分 <b>+${flags[block.start+i]}</b></span><span>加权后 <b>${fmt(boosted[i])}</b></span>`;$('prob-readout').innerHTML=`<span>token 位置 <b>${block.start+i}</b></span><span>加权前 <b>${pct(before[i])}</b></span><span>加权后 <b>${pct(after[i])}</b></span><span>倍率 <b>${(after[i]/before[i]).toFixed(3)}×</b></span>`};
+    drawLineChart($('logit-chart'),[{values:raw,color:'#6a8292',width:2.5},{values:boosted,color:'#db6845',width:2}],v=>v.toFixed(1),readout);
+    drawLineChart($('prob-chart'),[{values:before,color:'#6a8292',width:2.5},{values:after,color:'#db6845',width:2}],pct,readout);
+    drawOverview(data);
+    $('layer').value=activeLayer;$('block-number').value=activeBlock;$('block-range').value=activeBlock;
+    document.querySelectorAll('#quick button').forEach(b=>b.classList.toggle('active',Number(b.dataset.block)===activeBlock));
+    $('mass-table').replaceChildren(...Object.entries(trace.layers).map(([layer,meta])=>{const row=document.createElement('tr');row.className=layer===activeLayer?'current':'';row.innerHTML=`<td>第 ${layer} 层</td><td>${pct(meta.selected_mass_before)}</td><td>${pct(meta.selected_mass_after)}</td><td>+${pct(meta.selected_mass_after-meta.selected_mass_before)}</td>`;row.addEventListener('click',()=>{activeLayer=layer;update()});return row}));
+  }
+  function setBlock(value){const n=Number(value);if(!Number.isInteger(n)||n<0||n>=score.blocks.length)return;activeBlock=n;activeOffset=0;update()}
+  $('layer').addEventListener('change',e=>{activeLayer=e.target.value;update()});$('block-number').addEventListener('change',e=>setBlock(e.target.value));$('block-range').addEventListener('input',e=>setBlock(e.target.value));document.querySelectorAll('#quick button').forEach(button=>button.addEventListener('click',()=>setBlock(button.dataset.block)));
+  update();
+})();
+</script>
+</body>
+</html>
