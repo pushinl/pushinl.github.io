@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>评分头怎样改变 Attention？逐步动画与完整公式</title>
+  <meta name="description" content="从评分头的块向量、128 维相似度和位置修正，逐步演示选块、QK 加 1、softmax 和 V 加权汇总。">
+  <style>
+    :root{font-family:Inter,"Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;background:#f5f5ef;color:#18332e;font-synthesis:none}
+    *{box-sizing:border-box}body{margin:0;line-height:1.55}button{font:inherit;cursor:pointer}a{color:#176f5e}a:hover{text-decoration-thickness:2px}.shell{max-width:1170px;margin:auto;padding:22px clamp(16px,3vw,36px) 68px}
+    nav{display:flex;gap:19px;flex-wrap:wrap;align-items:center;font-size:.88rem}nav a{text-decoration:none;font-weight:700}.eyebrow{color:#157965;font-size:.8rem;letter-spacing:.08em;font-weight:800;margin:34px 0 8px}h1{font-size:clamp(2.15rem,5vw,4.25rem);letter-spacing:-.052em;line-height:1.13;margin:0 0 16px;max-width:900px}h1 em{font-style:normal;color:#d35f3f}.lead{font-size:clamp(1.04rem,1.7vw,1.2rem);max-width:940px;color:#536a61;margin:0 0 22px}.card{background:#fff;border:1px solid #d9e5db;border-radius:20px;box-shadow:0 12px 28px #28533a12}.bridge{display:flex;align-items:center;flex-wrap:wrap;gap:7px;background:#e8f5e9;border:1px solid #b7ddbe;border-radius:15px;padding:13px 16px;margin:20px 0 14px;font-size:.92rem;font-weight:750}.bridge span{padding:6px 10px;border-radius:8px;background:#fff}.bridge b{color:#16805f}.bridge i{font-style:normal;color:#668675}.warning{border-left:4px solid #df9654;background:#fff7ea;padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0 26px;color:#664e33}.warning strong{color:#3d3929}
+    .demo{overflow:hidden}.demo-head{display:flex;justify-content:space-between;gap:15px;align-items:flex-start;flex-wrap:wrap;padding:22px 24px 14px}.demo-head h2{font-size:1.45rem;margin:0 0 4px;letter-spacing:-.025em}.demo-head p{margin:0;color:#63776c;font-size:.91rem}.tag{background:#edf3ee;border-radius:999px;color:#496359;font-size:.77rem;font-weight:750;padding:6px 11px}.stepper{display:flex;gap:6px;padding:8px 24px 14px;overflow-x:auto}.stepper button{border:1px solid #d4e2d7;background:#f5f8f3;color:#587168;border-radius:10px;min-width:94px;padding:7px 9px;font-size:.81rem;white-space:nowrap}.stepper button.active{background:#1a7962;color:#fff;border-color:#1a7962;font-weight:800}.stepper button.past{color:#245c4d;background:#e7f5e8}.motion-line{height:7px;background:#e7ede7;position:relative;margin:1px 24px 0;border-radius:999px;overflow:visible}.motion-line .fill{height:100%;width:0;background:linear-gradient(90deg,#2a9573,#e29358);border-radius:999px;transition:width .65s ease}.motion-line .dot{position:absolute;top:-5px;left:0;width:17px;height:17px;background:#f6b567;border:3px solid #fff;box-shadow:0 0 0 2px #d58746;border-radius:50%;transition:left .65s ease}
+    .stage-note{display:flex;gap:17px;align-items:center;min-height:83px;padding:15px 24px 16px}.stage-note strong{font-size:1.13rem;color:#174f40}.stage-note p{margin:3px 0 0;color:#60756a;font-size:.91rem}.stage-count{flex:none;font-variant-numeric:tabular-nums;background:#e2f3e7;color:#13694e;padding:7px 10px;border-radius:9px;font-weight:800}
+    .visual{background:linear-gradient(135deg,#f8faf5 0%,#eef5ef 100%);border-top:1px solid #dfe9df;padding:20px 24px 24px}.visual-grid{display:grid;grid-template-columns:minmax(225px,.95fr) minmax(280px,1.05fr);gap:14px}.scene-card{background:#fff;border:1px solid #dbe8dd;border-radius:15px;padding:16px;min-width:0}.scene-card h3{font-size:1rem;margin:0 0 12px}.mini-label{font-size:.74rem;text-transform:uppercase;letter-spacing:.07em;color:#678277;font-weight:800}.reveal{opacity:.14;filter:grayscale(.7);transform:translateY(7px);transition:opacity .55s ease,filter .55s ease,transform .55s ease}.reveal.seen{opacity:1;filter:none;transform:translateY(0)}.reveal.current{outline:2px solid #e8a063;outline-offset:3px}.block-line{display:grid;grid-template-columns:40px 1fr 74px;gap:8px;align-items:center;margin:10px 0}.block-line b{font-size:.91rem}.token-pair{display:flex;gap:5px}.token{background:#e5eee9;border:1px solid #b8cfc1;border-radius:8px;padding:7px 8px;min-width:40px;text-align:center;font-size:.82rem;font-weight:800}.block-line.b .token{background:#fff0de;border-color:#e7b782}.block-desc{font-size:.75rem;color:#789083}.query-token{margin-top:15px;background:#173f35;color:#fff;border-radius:10px;padding:9px 11px;font-size:.84rem;display:flex;gap:9px;align-items:center}.query-token b{font-size:.9rem}.query-token small{color:#c9e8d4}.vector-flow{display:flex;align-items:center;gap:7px;margin:10px 0;flex-wrap:wrap}.vector-flow span{font-size:.79rem;border:1px solid #cddfd2;background:#f2f7f1;padding:6px 8px;border-radius:7px}.vector-flow i{font-style:normal;color:#789785}.head-separator{height:1px;background:#e7eee7;margin:13px 0}.score-row{display:grid;grid-template-columns:24px 1fr 38px;gap:8px;align-items:center;margin:8px 0;font-size:.85rem}.score-track{height:15px;background:#e8eee8;border-radius:999px;position:relative;overflow:hidden}.score-track:after{content:"";position:absolute;left:50%;height:100%;border-left:2px dashed #324a3e;top:0}.score-fill{height:100%;width:0;background:#9ab8a7;transition:width .8s cubic-bezier(.25,.8,.25,1);border-radius:999px}.score-row.b .score-fill{background:#d88a50}.score-row b{font-variant-numeric:tabular-nums}.score-legend{font-size:.74rem;color:#688273;margin:8px 0 0}.score-legend b{color:#314b3d}.score-panel.seen .score-fill{width:var(--value)}
+    .mask-card{grid-column:1/-1;display:flex;align-items:center;gap:9px;flex-wrap:wrap}.mask-card h3{margin:0 10px 0 0}.mask-token{display:inline-flex;align-items:center;gap:6px;background:#eaf1eb;border:1px solid #cadbcf;padding:7px 10px;border-radius:9px;font-size:.81rem}.mask-token b{background:#dce7df;color:#526b5b;border-radius:6px;padding:2px 5px}.mask-token.selected{background:#fff0df;border-color:#e6b77f}.mask-token.selected b{background:#eaa15d;color:#4f2908}.mask-hint{font-size:.8rem;color:#63796d;margin-left:auto}
+    .attention-scene{grid-column:1/-1}.attention-scene h3{margin-bottom:6px}.attention-scene .small{font-size:.85rem;color:#60766a;margin:0 0 12px}.q-fan{height:74px;max-width:520px;margin:0 auto 8px;position:relative}.q-fan svg{width:100%;height:100%;overflow:visible}.q-fan path{stroke:#80ae98;stroke-width:2;fill:none;stroke-dasharray:130;stroke-dashoffset:130;transition:stroke-dashoffset 1s ease}.q-fan.seen path{stroke-dashoffset:0}.q-fan .fan-b{stroke:#da9060}.q-fan .label{font-size:11px;fill:#1d5340;font-weight:800}.token-heads{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;text-align:center;font-size:.8rem;font-weight:800;margin:0 0 11px}.token-heads span{padding:5px;border-radius:7px;background:#e9f1e9}.token-heads .b{background:#ffefd9}.attention-table{width:100%;border-collapse:collapse;table-layout:fixed;font-variant-numeric:tabular-nums}.attention-table th{font-size:.77rem;color:#607569;font-weight:800;text-align:center;padding:7px 4px;border-bottom:1px solid #e2eae2}.attention-table td{text-align:center;padding:7px 4px;border-bottom:1px solid #eaf0e8;vertical-align:middle}.attention-table td:first-child{text-align:left;font-size:.8rem;font-weight:800;width:70px}.attention-table .b{color:#a45526}.logit{display:inline-block;min-width:46px;background:#edf4ef;border-radius:7px;padding:4px}.logit.new{background:#fff0de;color:#8e4d24;font-weight:800}.bonus{display:inline-block;background:#f8dbc0;color:#884517;border-radius:6px;padding:2px 5px;font-size:.79rem;font-weight:800;transform:scale(.5);transition:transform .55s ease}.bonus.seen{transform:scale(1)}.bar-cell{min-width:0}.bar-track{display:block;height:12px;border-radius:999px;background:#edf0ed;overflow:hidden}.bar-fill{display:block;height:100%;width:0;background:#88aaa0;border-radius:999px;transition:width .85s cubic-bezier(.2,.8,.2,1)}.bar-fill.after{background:#e2a270}.bar-group.seen .bar-fill{width:var(--value)}.bar-group small{display:block;font-size:.72rem;color:#5a6c60;margin-top:2px}.attention-table .raw-logit.reveal,.attention-table .boost-logit.reveal,.attention-table .bar-group.reveal{display:block}.sum-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}.sum-box{padding:11px;border-radius:10px;background:#eef5ef}.sum-box.after{background:#fff0df}.sum-box span{font-size:.74rem;color:#697a6b}.sum-box strong{display:block;font-size:1.1rem;font-variant-numeric:tabular-nums}.sum-track{height:11px;background:#d9e7dc;border-radius:999px;overflow:hidden;margin-top:7px}.sum-track i{display:block;height:100%;background:#d89154;width:0;transition:width .9s ease}.sum-box.seen .sum-track i{width:var(--value)}.scene-takeaway{margin:13px 0 0;padding:10px 13px;border-left:4px solid #d98f52;background:#fff6e9;border-radius:0 8px 8px 0;font-size:.88rem;color:#6f5034}
+    .controls{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:16px 24px;border-top:1px solid #e2eae1}.controls .buttons{display:flex;gap:7px;flex-wrap:wrap}.controls button{border-radius:9px;border:1px solid #b9d4c0;background:#f2f8f1;color:#245846;padding:8px 12px;font-size:.89rem;font-weight:750}.controls button.primary{background:#187b61;color:#fff;border-color:#187b61}.controls button:disabled{opacity:.45;cursor:default}.controls input[type=range]{width:clamp(130px,22vw,230px);accent-color:#188261}.controls label{font-size:.8rem;color:#60786a}
+    .detail-section{margin-top:30px}.detail-section h2{font-size:clamp(1.5rem,3vw,2.2rem);letter-spacing:-.035em;margin:0 0 5px}.detail-section>p{color:#60746a;margin:0 0 16px}.formula-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.formula-card{padding:19px 21px}.formula-card h3{font-size:1.02rem;margin:0 0 8px;display:flex;align-items:center;gap:9px}.num{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#dbf0df;color:#176c52;font-weight:850;font-size:.83rem}.formula-card p{margin:8px 0 0;color:#566c61;font-size:.9rem}.equation{display:block;background:#f2f6f0;color:#1e4739;border-radius:9px;padding:10px 12px;margin:7px 0;font:500 clamp(.82rem,1.38vw,1rem)/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:normal;overflow-wrap:anywhere}.formula-card.accent{border-color:#e5b783;background:#fffaf3}.formula-card.accent .equation{background:#fff0dc}.formula-card .tiny{font-size:.79rem;color:#718579}.formula-card button{background:none;border:0;padding:0;margin-top:9px;color:#176f5e;text-decoration:underline;font-weight:700;font-size:.84rem}.notation{padding:19px 22px;margin-top:12px}.notation h3{margin:0 0 7px;font-size:1rem}.notation p{margin:6px 0;color:#596d63;font-size:.9rem}.math-box{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.math-box .card{padding:20px}.math-box h3{font-size:1rem;margin:0 0 9px}.math-box p{color:#5b6e63;margin:8px 0 0;font-size:.89rem}.actual{margin-top:28px;padding:23px}.actual h2{margin:0 0 10px;font-size:1.4rem}.actual p{color:#53675d;max-width:860px;margin:9px 0}.actual a{font-weight:750}.actual-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:17px 0}.actual-grid div{background:#f2f7f1;border-radius:10px;padding:12px}.actual-grid strong{display:block;font-size:1.15rem;font-variant-numeric:tabular-nums}.actual-grid span{font-size:.77rem;color:#60756a}.foot{font-size:.8rem;color:#687d70;margin-top:24px;overflow-wrap:anywhere}
+    .real-controls{display:grid;grid-template-columns:1fr 1fr 1.3fr auto;gap:13px;align-items:end;margin:18px 0}.real-controls label{display:block;font-weight:750;font-size:.82rem;color:#49675a;margin-bottom:5px}.real-controls select,.real-controls input[type=number]{width:100%;border:1px solid #bad1c1;background:#fff;border-radius:9px;color:#1d3f31;padding:8px 10px}.real-controls input[type=range]{width:100%;accent-color:#cf7543;margin:9px 0 5px}.real-controls button{background:#d67a47;border:0;color:#fff;border-radius:9px;padding:9px 12px;font-weight:800;white-space:nowrap}.real-controls button:hover{background:#b75d32}.real-status{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:.87rem;margin:10px 0;color:#557266}.real-status strong{color:#26523e}.real-status span{border-radius:8px;background:#eff6ec;padding:6px 9px}.real-status .orange{background:#fff0e1;color:#8c4e27}.real-chart-card{border:1px solid #dfe9df;border-radius:13px;padding:13px 16px;margin:12px 0}.real-chart-card h3{font-size:1rem;margin:0 0 2px}.real-chart-card p{margin:0 0 8px;color:#64776b;font-size:.82rem}.real-chart-wrap{overflow-x:auto}.real-chart-wrap svg{display:block;width:100%;min-width:650px;height:auto;touch-action:pan-x}.real-legend{display:flex;gap:17px;flex-wrap:wrap;color:#596e62;font-size:.8rem}.real-legend i{display:inline-block;width:20px;height:0;border-top:3px solid;vertical-align:middle;margin-right:5px}.real-readout{background:#f2f7f1;border-radius:9px;padding:9px 11px;font-size:.81rem;display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 0;font-variant-numeric:tabular-nums}.real-readout strong{color:#184f3b}.real-method{font-size:.8rem!important;color:#718273!important}
+    @media(max-width:760px){.visual-grid,.formula-list,.math-box{grid-template-columns:1fr}.mask-card,.attention-scene{grid-column:auto}.visual{padding:17px}.demo-head,.stepper,.stage-note,.controls{padding-left:17px;padding-right:17px}.motion-line{margin-left:17px;margin-right:17px}.actual-grid{grid-template-columns:1fr}.real-controls{grid-template-columns:1fr 1fr}.mask-hint{margin-left:0}.attention-table th{font-size:.65rem}.attention-table td{padding:6px 2px}.bar-group small{font-size:.65rem}}@media(max-width:450px){.attention-table td:first-child{width:39px}.logit{min-width:32px;font-size:.75rem}.bonus{font-size:.68rem}.token-heads{font-size:.72rem}.sum-row{grid-template-columns:1fr}.stage-note{align-items:flex-start}.real-controls{grid-template-columns:1fr}.real-chart-card{padding:11px}}
+    @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+  </style>
+</head>
+<body>
+<main class="shell">
+  <nav><a href="./">← 返回完整报告</a><a href="attention-logit-trace.html">真实 QK 曲线</a><a href="score-inspector.html">真实块评分</a></nav>
+  <p class="eyebrow">推理阶段 · 从评分头到 ATTENTION</p>
+  <h1>评分头的分数，<br>到底怎样<em>改变 attention</em>？</h1>
+  <p class="lead">先记住一件事：评分头给<strong>整块</strong>打 0～1 的分数；服务选中块以后，给块内<strong>每个 token</strong>贴上 1；attention 再把这个 1 加到该 token 的 QK 匹配分上，最后用 softmax 算权重。</p>
+  <div class="bridge" aria-label="完整连接"><span>块分数 p<sub>块</sub></span><i>→</i><span>选块</span><i>→</i><span>token 标记 m<sub>i</sub> = 0 或 1</span><i>→</i><span>QK 匹配分 + m<sub>i</sub></span><i>→</i><b>softmax 权重</b></div>
+  <p class="warning"><strong>容易混淆的地方：</strong>评分头算出的 0.9 不是“90% attention”，也不是直接把 0.9 加到 QK 上。当前默认加的是固定的 <strong>1</strong>，前提是这个块入选。</p>
+
+  <section class="card demo" id="demo" aria-label="评分到 attention 的动画演示">
+    <div class="demo-head"><div><h2>跟着动画，走完一次生成</h2><p>下面只用 A、B 两个块和四个 token 示范；数值是教学示例，不是模型实测。</p></div><span class="tag">7 步 · 可暂停 / 单步</span></div>
+    <div class="stepper" role="group" aria-label="跳转动画步骤">
+      <button type="button" data-step="0">① 历史分块</button><button type="button" data-step="1">② 块向量</button><button type="button" data-step="2">③ 评分</button><button type="button" data-step="3">④ 选区</button><button type="button" data-step="4">⑤ QK</button><button type="button" data-step="5">⑥ 加 1</button><button type="button" data-step="6">⑦ softmax</button>
+    </div>
+    <div class="motion-line" aria-hidden="true"><div class="fill" id="progress-fill"></div><div class="dot" id="progress-dot"></div></div>
+    <div class="stage-note" aria-live="polite"><span class="stage-count" id="stage-count">1 / 7</span><div><strong id="stage-title"></strong><p id="stage-explain"></p></div></div>
+    <div class="visual" id="visual">
+      <div class="visual-grid">
+        <div class="scene-card reveal" data-reveal="0"><span class="mini-label">完整可见前文</span><h3>这一步要继续生成 Agent 回复</h3><div class="block-line"><b>块 A</b><div class="token-pair"><span class="token">A₁</span><span class="token">A₂</span></div><span class="block-desc">普通背景</span></div><div class="block-line b"><b>块 B</b><div class="token-pair"><span class="token">B₁</span><span class="token">B₂</span></div><span class="block-desc">关键报错</span></div><div class="query-token"><b>● 当前查询</b><small>模型现在要生成下一个 token</small></div></div>
+        <div class="scene-card reveal" data-reveal="1"><span class="mini-label">评分头的输入</span><h3>把整块和当前问题各变成一个向量</h3><div class="vector-flow"><span>A₁、A₂ 的隐藏状态</span><i>→</i><span>平均：u<sub>A</sub></span></div><div class="vector-flow"><span>B₁、B₂ 的隐藏状态</span><i>→</i><span>平均：u<sub>B</sub></span></div><div class="vector-flow"><span>前文末尾隐藏状态</span><i>→</i><span>当前向量：u<sub>★</sub></span></div><div class="head-separator"></div><div class="vector-flow"><span>u<sub>★</sub> → q<sub>score</sub></span><i>比较</i><span>u<sub>A/B</sub> → k<sub>score</sub></span></div><div class="reveal score-panel" data-reveal="2"><div class="head-separator"></div><span class="mini-label">相似度 + 位置修正 → sigmoid</span><div class="score-row"><b>A</b><div class="score-track"><div class="score-fill" style="--value:20%"></div></div><b>0.2</b></div><div class="score-row b"><b>B</b><div class="score-track"><div class="score-fill" style="--value:90%"></div></div><b>0.9</b></div><p class="score-legend">虚线是 <b>0.5</b> 门槛；B 入选。完整请求还会取最多 12 块。</p></div></div>
+        <div class="scene-card mask-card reveal" data-reveal="3"><h3>选区展开到每个 token</h3><span class="mask-token">A₁ <b>m=0</b></span><span class="mask-token">A₂ <b>m=0</b></span><span class="mask-token selected">B₁ <b>m=1</b></span><span class="mask-token selected">B₂ <b>m=1</b></span><span class="mask-hint">块 B 的 0.9 到这里就不再参与加法</span></div>
+        <div class="scene-card attention-scene reveal" data-reveal="4"><span class="mini-label">模型原有的 attention · 这里是另一套 Q/K/V</span><h3>当前 token 的 Q，对四个历史 token 的 K 分别做点积</h3><p class="small">下方的 2、1 是 Q·K/√d<sub>k</sub> 的<strong>教学匹配分</strong>；并非评分头的 0.2、0.9。</p>
+          <div class="q-fan reveal" data-reveal="4"><svg viewBox="0 0 520 74" aria-label="当前查询连接四个历史 token"><text class="label" x="260" y="12" text-anchor="middle">当前 Qₜ</text><circle cx="260" cy="23" r="7" fill="#1a7962"></circle><path d="M260 27 Q195 39 64 67"></path><path d="M260 27 Q230 43 195 67"></path><path class="fan-b" d="M260 27 Q290 43 325 67"></path><path class="fan-b" d="M260 27 Q325 39 456 67"></path></svg></div>
+          <div class="token-heads"><span>A₁</span><span>A₂</span><span class="b">B₁</span><span class="b">B₂</span></div>
+          <table class="attention-table" aria-label="四个 token 的匹配分、加分和注意力权重"><thead><tr><th>token</th><th>原始 QK</th><th>加分</th><th>加权后</th><th>softmax 前</th><th>softmax 后</th></tr></thead><tbody id="token-table"></tbody></table>
+          <div class="sum-row reveal" data-reveal="6"><div class="sum-box"><span>加权前 · B 块总 attention</span><strong id="sum-before">26.9%</strong><div class="sum-track"><i id="sum-before-fill"></i></div></div><div class="sum-box after"><span>加权后 · B 块总 attention</span><strong id="sum-after">50.0%</strong><div class="sum-track"><i id="sum-after-fill"></i></div></div></div>
+          <p class="scene-takeaway reveal" data-reveal="6">最后用这些新的 attention 权重对 V 向量加权求和。因此 B 块的信息在这一步的汇总中占比变大；后续层和最终生成也可能因此改变。</p>
+        </div>
+      </div>
+    </div>
+    <div class="controls"><div class="buttons"><button type="button" id="prev">← 上一步</button><button type="button" id="play" class="primary">▶ 播放</button><button type="button" id="next">下一步 →</button></div><label for="seek">拖动步骤 <input id="seek" type="range" min="0" max="6" value="0"></label></div>
+  </section>
+
+  <section class="detail-section" id="formulas"><h2>把动画写成完整公式</h2><p>先看每行“产出什么”，再看下一行怎样使用它。这里的 q<sub>score</sub> / k<sub>score</sub> 与主模型 attention 的 Q / K 是<strong>两套不同的投影</strong>。</p>
+    <div class="formula-list">
+      <article class="card formula-card"><h3><span class="num">1</span>得到块表示与当前表示</h3><code class="equation">uⱼ = mean(hᵢ，i 属于块 Bⱼ)<br>u★ = h<sub>T−1</sub></code><p>h 是训练后模型算出的隐藏向量（2048 维）。一个约 256-token 的块取平均；前文最后位置的向量代表“当前要接着做什么”。</p><button type="button" data-jump="1">在动画里看这一行 ↑</button></article>
+      <article class="card formula-card"><h3><span class="num">2</span>评分头形成自己的 q、k</h3><code class="equation">q<sub>score</sub> = unit(W<sub>q</sub> · LN(u★))<br>k<sub>score,j</sub> = unit(W<sub>k</sub> · LN(uⱼ))</code><p>两组独立的线性投影把 2048 维压到 128 维，unit 表示单位化。评分头用它们比较“当前需要”和“该块内容”。</p><button type="button" data-jump="1">在动画里看这一行 ↑</button></article>
+      <article class="card formula-card"><h3><span class="num">3</span>相似度、位置与 sigmoid</h3><code class="equation">rⱼ = 4 × (q<sub>score</sub> · k<sub>score,j</sub>) + MLP(posⱼ)<br>pⱼ = sigmoid(rⱼ) = 1 / (1 + e<sup>−rⱼ</sup>)</code><p>posⱼ 包含块中心、离前文末尾的距离、块长度三个特征；MLP 是 3→32→1 的位置修正网络。pⱼ 才是 0～1 的<strong>块评分</strong>。</p><button type="button" data-jump="2">在动画里看这一行 ↑</button></article>
+      <article class="card formula-card accent"><h3><span class="num">4</span>最重要的桥：分数变 0/1 标记</h3><code class="equation">S = 得分 ≥ 0.5 的块中，最高的最多 12 块<br>mᵢ = 1（token i 属于 S），否则 0</code><p>例子中 p<sub>B</sub>=0.9，所以 B₁、B₂ 的 m 都是 1。<strong>0.9 不作为 attention 的加分值</strong>；这一步已经把连续分数变成了位置清单。</p><button type="button" data-jump="3">在动画里看这一行 ↑</button></article>
+      <article class="card formula-card"><h3><span class="num">5</span>主模型算原始 QK，再加标记</h3><code class="equation">s<sub>t,i</sub> = Q<sub>t</sub> · K<sub>i</sub> / √256<br>s′<sub>t,i</sub> = s<sub>t,i</sub> + 1 × mᵢ</code><p>Q、K 来自主模型当前层，而不是评分头的 q<sub>score</sub>、k<sub>score</sub>。默认只在第 27、31、35、39 个 full attention 层执行这项加法。</p><button type="button" data-jump="5">在动画里看这一行 ↑</button></article>
+      <article class="card formula-card accent"><h3><span class="num">6</span>softmax 才得到 attention 权重</h3><code class="equation">a<sub>t,i</sub> = e<sup>s′<sub>t,i</sub></sup> / Σ<sub>j≤t</sub> e<sup>s′<sub>t,j</sub></sup><br>o<sub>t</sub> = Σ<sub>i≤t</sub> a<sub>t,i</sub> V<sub>i</sub></code><p>分母包括当前查询能看见的<strong>所有</strong>位置。得到的 a 才是 attention 权重；最后用它汇总 V，影响后续计算与输出。</p><button type="button" data-jump="6">在动画里看这一行 ↑</button></article>
+    </div>
+    <div class="card notation"><h3>位置修正里的 posⱼ 到底是什么？</h3><p><code>[(start+end)/(2T), log(1+T−end)/log(1+T), (end−start)/256]</code>。依次表示相对中心、离前文末尾的距离、相对块长度；它们进入小型位置网络，再与 128 维相似度相加。这个位置修正参与<strong>块评分</strong>，不是在 attention 里再次加分。</p><p>评分阶段使用完整的当前请求前文。评分后，服务用<strong>同一份前文</strong>进入生成阶段；一个请求内继续吐 token 不会重跑评分头。Agent 带着新工具结果发起下一轮请求时，才对更新后的前文重新评分。</p></div>
+  </section>
+
+  <section class="detail-section" id="softmax-why"><h2>为什么“原始 QK 很大，+1 仍有作用”？</h2><p>看差值即可。下面是动画中 B 块的两个 token 从 1 加到 2 后，softmax 分母如何变化。</p><div class="math-box"><div class="card"><h3>加权前：A 是 2、2；B 是 1、1</h3><code class="equation">分母 = e² + e² + e¹ + e¹<br>B 占比 = (e¹+e¹) / 分母 = 26.9%</code><p>这里的 2 和 1 只是方便算的教学数字。</p></div><div class="card"><h3>给 B 的两个 token 各加 1 后</h3><code class="equation">分母 = e² + e² + e² + e²<br>B 占比 = (e²+e²) / 分母 = 50.0%</code><p>把原始分改成 15、15、14、14，结果仍是 26.9%→50.0%，因为共同加上的 13 在 softmax 中会抵消。</p></div></div><p class="warning"><strong>边界：</strong>+1 会改变<strong>相对</strong>匹配分，但不保证最终任务效果一定更好；如果入选位置原本已几乎拿走全部 attention，总占比的提升也会因接近 100% 而变小。</p></section>
+
+  <section class="card actual" id="actual">
+    <h2>现在看真实数据：+1 前后两条曲线</h2>
+    <p>上面的四个 token 是教学数字。下面直接读取同一条已保存模型服务请求的隔离重放数据：43,715 个可见 token、第 27/31/35/39 层 head 0 的实际 QK/√256。默认放大<strong>入选的块 14</strong>，但 softmax 分母始终包括整个前文。</p>
+    <div class="actual-grid"><div><strong id="actual-score">0.8590</strong><span>这个块的评分头得分</span></div><div><strong id="actual-example">14.381 → 15.381</strong><span id="actual-example-label">token 3818 的 QK/√256</span></div><div><strong id="actual-mass">51.66% → 74.39%</strong><span>所有入选 token 的 attention 总占比</span></div></div>
+    <div class="real-controls"><div><label for="real-layer">看哪一层？</label><select id="real-layer"><option value="27">第 27 层 · head 0</option><option value="31">第 31 层 · head 0</option><option value="35">第 35 层 · head 0</option><option value="39">第 39 层 · head 0</option></select></div><div><label for="real-block">看哪一块？0～170</label><input id="real-block" type="number" min="0" max="170" value="14"></div><div><label for="real-bias">把入选位置从 +0 滑到 +1：<output id="real-bias-value">+1.00</output></label><input id="real-bias" type="range" min="0" max="1" step="0.01" value="1"></div><button type="button" id="real-play">▶ 播放真实曲线变化</button></div>
+    <div class="real-status"><span id="real-selection">块 14 · 已入选</span><span id="real-span">token 3584～3839</span><span class="orange" id="real-block-mass">本块 attention 4.53% → 6.53%</span></div>
+    <div class="real-chart-card"><h3>曲线一：每个 token 的原始 QK 与加分后 QK</h3><p>蓝线不动；橙线只在入选位置随 +0→+1 上移。横轴是历史 token 位置。</p><div class="real-chart-wrap"><svg id="real-logit-chart" viewBox="0 0 900 250" role="img" aria-label="真实逐 token QK 匹配分在加 1 前后的曲线"></svg></div><div class="real-legend"><span><i style="border-color:#5f7f91"></i>原始 QK/√256</span><span><i style="border-color:#d57142"></i>加分后 QK</span></div><div class="real-readout" id="real-logit-readout"></div></div>
+    <div class="real-chart-card"><h3>曲线二：全前文 softmax 后，每个 token 的 attention 权重</h3><p>两条曲线各自以全部 43,715 个可见位置为分母。选中位置的比例可能升高，未选中位置可能因分母变化而降低。</p><div class="real-chart-wrap"><svg id="real-prob-chart" viewBox="0 0 900 250" role="img" aria-label="真实逐 token attention 权重在加 1 前后的曲线"></svg></div><div class="real-legend"><span><i style="border-color:#5f7f91"></i>同 QK、不加本层 +1</span><span><i style="border-color:#d57142"></i>当前加分后的 softmax</span></div><div class="real-readout" id="real-prob-readout"></div></div>
+    <p class="real-method">滑动时 0 与 1 两端对应同一组真实 QK 上“不加本层偏置”与“按当前服务加 1”的计算；中间的 +0.01～+0.99 是用真实 QK 算出的连续过渡动画，不是另一次实际评测。公开曲线编码精度为 0.001 logit。</p>
+    <p><a href="attention-logit-trace.html">打开完整实测曲线页：可看 171 块全局占比 →</a>　<a href="score-inspector.html">查看 171 块评分与可公开文本 →</a></p>
+    <p class="foot">“加权前”是保持该层 QK 不变、仅去掉这一层 +1 的局部对照；不是另一轮完整关闭 steering 的推理。第 31/35/39 层的 QK 已经受到较早 steering 层影响。此请求未核对到具体 SWE-bench 题号或最终成绩。</p>
+  </section>
+  <footer class="foot">实现依据：评分头与池化见 <code>qwen36_attention_training/epoch1/src/salience.py</code>；选块、QK 加偏置与 softmax 见 <code>attention_steering/src/qwen36_steering/core.py</code>；推理接线见 <code>runtime.py</code> 和 <code>gateway.py</code>。<a href="./">返回完整报告</a></footer>
+</main>
+<script src="evaluation-scores.js"></script>
+<script src="attention-logit-trace-data.js"></script>
+<script>
+(()=>{
+  const $=id=>document.getElementById(id);
+  const raw=[2,2,1,1],mask=[0,0,1,1],names=['A₁','A₂','B₁','B₂'];
+  const softmax=values=>{const top=Math.max(...values),e=values.map(v=>Math.exp(v-top)),sum=e.reduce((a,b)=>a+b,0);return e.map(v=>v/sum)};
+  const before=softmax(raw),after=softmax(raw.map((v,i)=>v+mask[i]));
+  const percent=v=>(v*100).toFixed(1)+'%';
+  const bBefore=before[2]+before[3],bAfter=after[2]+after[3];
+  $('sum-before').textContent=percent(bBefore);$('sum-after').textContent=percent(bAfter);
+  $('sum-before-fill').parentElement.style.setProperty('--value',percent(bBefore));$('sum-after-fill').parentElement.style.setProperty('--value',percent(bAfter));
+  const tbody=$('token-table');
+  names.forEach((name,i)=>{
+    const row=document.createElement('tr');
+    if(mask[i])row.className='b';
+    row.innerHTML=`<td>${name}</td><td><span class="raw-logit reveal" data-reveal="4"><span class="logit">${raw[i]}</span></span></td><td><span class="bonus reveal" data-reveal="5">+${mask[i]}</span></td><td><span class="boost-logit reveal" data-reveal="5"><span class="logit new">${raw[i]+mask[i]}</span></span></td><td><span class="bar-group reveal" data-reveal="6"><span class="bar-track"><span class="bar-fill" style="--value:${percent(before[i]/.4)}"></span></span><small>${percent(before[i])}</small></span></td><td><span class="bar-group reveal" data-reveal="6"><span class="bar-track"><span class="bar-fill after" style="--value:${percent(after[i]/.4)}"></span></span><small>${percent(after[i])}</small></span></td>`;
+    tbody.append(row);
+  });
+  const titles=['完整前文被分成块','评分头拿到两种输入','评分头输出块分数','把入选块展开为 token 标记','主模型计算原始 QK 匹配分','只给入选位置的 QK 加 1','softmax 把匹配分变成权重'];
+  const explanations=[
+    'A 和 B 是历史内容；当前查询表示模型正要继续生成。此处每块只画两个 token，真实部署约 256 个。',
+    '评分头用块内隐藏状态的平均值代表块，用前文末尾的隐藏状态代表当前需要；再投影出自己的 q_score、k_score。',
+    '相似度乘 4，再加位置修正、过 sigmoid。示例 A 得 0.2，B 得 0.9；这些是块分数，不是 attention 权重。',
+    'B 超过 0.5 门槛且进入最多 12 块的名额，因此 B₁、B₂ 的 m=1；A₁、A₂ 的 m=0。',
+    '现在才进入主模型 attention：当前 Q 分别与四个 K 做点积并除以 √d_k，得到 2、2、1、1。',
+    '匹配分变成 2、2、2、2。B 的两个 token 各加固定 1，不是各加评分头输出的 0.9。',
+    '对所有可见位置一起 softmax：B 的总权重从 26.9% 变成 50.0%。新权重再汇总 V，可能影响下一个 token。'
+  ];
+  let step=0,timer=null;
+  function render(next){
+    step=Math.max(0,Math.min(6,Number(next)));
+    $('stage-count').textContent=`${step+1} / 7`;$('stage-title').textContent=titles[step];$('stage-explain').textContent=explanations[step];$('seek').value=step;
+    $('progress-fill').style.width=`${step/6*100}%`;$('progress-dot').style.left=`calc(${step/6*100}% - 8px)`;
+    document.querySelectorAll('[data-reveal]').forEach(el=>{const index=Number(el.dataset.reveal);el.classList.toggle('seen',index<=step);el.classList.toggle('current',index===step&&el.classList.contains('scene-card'))});
+    document.querySelectorAll('[data-step]').forEach(button=>{const n=Number(button.dataset.step);button.classList.toggle('active',n===step);button.classList.toggle('past',n<step);button.setAttribute('aria-current',n===step?'step':'false')});
+    $('prev').disabled=step===0;$('next').disabled=step===6;
+  }
+  function pause(){if(timer){clearInterval(timer);timer=null}$('play').textContent='▶ 播放'}
+  function play(){if(timer){pause();return}if(step===6)render(0);$('play').textContent='Ⅱ 暂停';timer=setInterval(()=>{if(step===6){pause();return}render(step+1)},3500)}
+  $('play').addEventListener('click',play);$('prev').addEventListener('click',()=>{pause();render(step-1)});$('next').addEventListener('click',()=>{pause();render(step+1)});$('seek').addEventListener('input',ev=>{pause();render(ev.target.value)});
+  document.querySelectorAll('[data-step]').forEach(button=>button.addEventListener('click',()=>{pause();render(button.dataset.step)}));
+  document.querySelectorAll('[data-jump]').forEach(button=>button.addEventListener('click',()=>{pause();render(button.dataset.jump);$('demo').scrollIntoView({behavior:'smooth',block:'start'})}));
+  render(0);
+  if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches)window.setTimeout(()=>{if(step===0&&!timer)play()},1100);
+})();
+</script>
+<script>
+(()=>{
+  const scores=window.EVALUATION_SCORE_SAMPLE,trace=window.ATTENTION_LOGIT_TRACE,$=id=>document.getElementById(id);
+  if(!scores||!trace||scores.prompt_tokens!==trace.prompt_tokens){$('actual').insertAdjacentHTML('beforeend','<p class="warning">实测曲线加载失败，请刷新页面。</p>');return}
+  const total=trace.prompt_tokens,selected=new Set(scores.selected_blocks),flags=new Uint8Array(total),layers={};
+  for(const j of selected){const b=scores.blocks[j];flags.fill(1,b.start,b.end)}
+  if(flags.reduce((a,b)=>a+b,0)!==trace.selected_tokens)throw Error('实测选区与 QK 数据不匹配');
+  function getLayer(id){
+    if(layers[id])return layers[id];
+    const bytes=atob(trace.layers[id].raw_qk_milli_le_b64),raw=new Float64Array(total),exp=new Float64Array(total);
+    if(bytes.length!==total*2)throw Error('QK 数据长度不匹配');
+    let maximum=-Infinity;
+    for(let i=0;i<total;i++){let n=bytes.charCodeAt(i*2)|(bytes.charCodeAt(i*2+1)<<8);if(n>=32768)n-=65536;raw[i]=n/1000;maximum=Math.max(maximum,raw[i])}
+    let markedSum=0,otherSum=0;
+    for(let i=0;i<total;i++){const value=Math.exp(raw[i]-maximum);exp[i]=value;if(flags[i])markedSum+=value;else otherSum+=value}
+    return layers[id]={raw,exp,markedSum,otherSum};
+  }
+  const ns='http://www.w3.org/2000/svg',add=(parent,tag,attrs,text)=>{const node=document.createElementNS(ns,tag);for(const [key,value] of Object.entries(attrs))node.setAttribute(key,String(value));if(text!==undefined)node.textContent=text;parent.append(node);return node};
+  const pct=value=>`${(value*100).toFixed(value*100>=.01?2:5)}%`;
+  let layer='27',blockIndex=14,bias=1,focus=234,animation=0,charts={};
+  function stop(){if(animation){cancelAnimationFrame(animation);animation=0}$('real-play').textContent='▶ 播放真实曲线变化'}
+  function selectedMass(data,value){const factor=Math.exp(value);return data.markedSum*factor/(data.otherSum+data.markedSum*factor)}
+  function ranges(data,block){
+    const min=Math.min(...data.raw.slice(block.start,block.end)),max=Math.max(...data.raw.slice(block.start,block.end));
+    const denom0=data.otherSum+data.markedSum,denom1=data.otherSum+data.markedSum*Math.E;
+    let probabilityMax=0;
+    for(let i=block.start;i<block.end;i++)probabilityMax=Math.max(probabilityMax,data.exp[i]/denom0,data.exp[i]*(flags[i]?Math.E:1)/denom1);
+    return {logit:[min-1.2,max+1.2],prob:[0,probabilityMax*1.12||1e-8]};
+  }
+  function makeChart(id,data,block,low,high,baseValues,isProbability){
+    const svg=$(id);svg.replaceChildren();const L=66,R=884,T=15,B=207,count=block.end-block.start;
+    const x=i=>L+(R-L)*i/Math.max(1,count-1),y=v=>B-(v-low)/(high-low)*(B-T),path=values=>values.map((v,i)=>`${i?'L':'M'}${x(i).toFixed(2)},${y(v).toFixed(2)}`).join(' ');
+    for(let k=0;k<=4;k++){const v=low+(high-low)*k/4,yy=y(v);add(svg,'line',{x1:L,x2:R,y1:yy,y2:yy,stroke:'#e4ece5','stroke-width':1});add(svg,'text',{x:L-8,y:yy+4,'text-anchor':'end',fill:'#6d8175','font-size':11},isProbability?pct(v):v.toFixed(1))}
+    for(const ratio of [0,.25,.5,.75,1]){const i=Math.round((count-1)*ratio);add(svg,'text',{x:x(i),y:B+24,'text-anchor':'middle',fill:'#6d8175','font-size':11},String(block.start+i))}
+    add(svg,'path',{d:path(baseValues),fill:'none',stroke:'#5f7f91','stroke-width':2.5,'stroke-linejoin':'round'});
+    const current=add(svg,'path',{d:path(baseValues),fill:'none',stroke:'#d57142','stroke-width':2.3,'stroke-linejoin':'round'});
+    const line=add(svg,'line',{x1:x(focus),x2:x(focus),y1:T,y2:B,stroke:'#244b3c','stroke-width':1,'stroke-dasharray':'4 4'});
+    const dot=add(svg,'circle',{cx:x(focus),cy:y(baseValues[focus]),r:4,fill:'#d57142',stroke:'#fff','stroke-width':1.5});
+    add(svg,'rect',{x:L,y:T,width:R-L,height:B-T,fill:'transparent'}).addEventListener('pointermove',event=>{const bounds=svg.getBoundingClientRect(),localX=(event.clientX-bounds.left)/bounds.width*900;focus=Math.max(0,Math.min(count-1,Math.round((localX-L)/(R-L)*(count-1))));update()});
+    return {current,line,dot,x,y,path,isProbability};
+  }
+  function rebuild(){
+    const data=getLayer(layer),block=scores.blocks[blockIndex],axis=ranges(data,block),baseLogit=[],baseProb=[],denom0=data.otherSum+data.markedSum;
+    focus=Math.min(focus,block.end-block.start-1);
+    for(let i=block.start;i<block.end;i++){baseLogit.push(data.raw[i]);baseProb.push(data.exp[i]/denom0)}
+    charts.logit=makeChart('real-logit-chart',data,block,...axis.logit,baseLogit,false);
+    charts.prob=makeChart('real-prob-chart',data,block,...axis.prob,baseProb,true);
+    $('actual-score').textContent=scores.scores[blockIndex].toFixed(4);
+    $('real-selection').textContent=`块 ${blockIndex} · ${selected.has(blockIndex)?'已入选，每个 token 加偏置':'未入选，本块 QK 不加偏置'}`;
+    $('real-span').textContent=`token ${block.start}～${block.end-1}`;
+    $('real-layer').value=layer;$('real-block').value=blockIndex;
+    update();
+  }
+  function update(){
+    const data=getLayer(layer),block=scores.blocks[blockIndex],factor=Math.exp(bias),denom0=data.otherSum+data.markedSum,denom=data.otherSum+data.markedSum*factor;
+    const logit=[],prob=[];let blockMass0=0,blockMass=0;
+    for(let i=block.start;i<block.end;i++){
+      logit.push(data.raw[i]+bias*flags[i]);const before=data.exp[i]/denom0;const current=data.exp[i]*(flags[i]?factor:1)/denom;prob.push(current);blockMass0+=before;blockMass+=current;
+    }
+    charts.logit.current.setAttribute('d',charts.logit.path(logit));charts.prob.current.setAttribute('d',charts.prob.path(prob));
+    for(const [chart,values] of [[charts.logit,logit],[charts.prob,prob]]){chart.line.setAttribute('x1',chart.x(focus));chart.line.setAttribute('x2',chart.x(focus));chart.dot.setAttribute('cx',chart.x(focus));chart.dot.setAttribute('cy',chart.y(values[focus]))}
+    const token=block.start+focus,raw=data.raw[token],current=logit[focus],before=data.exp[token]/denom0,after=prob[focus];
+    $('real-bias').value=bias.toFixed(2);$('real-bias-value').textContent=`+${bias.toFixed(2)}`;
+    $('actual-example').textContent=`${raw.toFixed(3)} → ${current.toFixed(3)}`;$('actual-example-label').textContent=`token ${token} 的 QK/√256`;
+    const exact=trace.layers[layer],massNow=bias===0?exact.selected_mass_before:bias===1?exact.selected_mass_after:selectedMass(data,bias);
+    $('actual-mass').textContent=`${pct(exact.selected_mass_before)} → ${pct(massNow)}`;
+    $('real-block-mass').textContent=`本块 attention ${pct(blockMass0)} → ${pct(blockMass)}`;
+    $('real-logit-readout').innerHTML=`<span>位置 <strong>${token}</strong></span><span>原始 <strong>${raw.toFixed(3)}</strong></span><span>加分 <strong>+${(bias*flags[token]).toFixed(2)}</strong></span><span>加分后 <strong>${current.toFixed(3)}</strong></span>`;
+    $('real-prob-readout').innerHTML=`<span>位置 <strong>${token}</strong></span><span>加分前 <strong>${pct(before)}</strong></span><span>加分后 <strong>${pct(after)}</strong></span><span>整块 <strong>${pct(blockMass0)} → ${pct(blockMass)}</strong></span>`;
+  }
+  $('real-layer').addEventListener('change',event=>{stop();layer=event.target.value;rebuild()});
+  $('real-block').addEventListener('change',event=>{const n=Number(event.target.value);if(!Number.isInteger(n)||n<0||n>=scores.blocks.length){event.target.value=blockIndex;return}stop();blockIndex=n;focus=0;rebuild()});
+  $('real-bias').addEventListener('input',event=>{stop();bias=Number(event.target.value);update()});
+  $('real-play').addEventListener('click',()=>{
+    stop();bias=0;update();$('real-play').textContent='播放中…';const started=performance.now();
+    const frame=now=>{bias=Math.min(1,(now-started)/2200);update();if(bias<1)animation=requestAnimationFrame(frame);else{animation=0;$('real-play').textContent='↺ 再播放一次'}};
+    animation=requestAnimationFrame(frame);
+  });
+  rebuild();
+})();
+</script>
+</body>
+</html>
