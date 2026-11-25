@@ -28,6 +28,7 @@
     <div class="card metric"><b id="hero-before">51.66%</b><span>入选区域加权前 attention</span></div>
     <div class="card metric emphasis"><b id="hero-after">74.39%</b><span>入选区域加权后 attention</span></div>
   </div>
+  <p class="lead" style="font-size:.96rem;margin-top:-12px">先看默认的块 14：token 3818 的真实原始匹配分约 14.381，加权后约 15.381；它的全前文 attention 占比从约 1.03% 升到 1.48%。下方曲线已定位到这个位置。</p>
   <section class="card formula" aria-label="从 QK 到 attention 的计算">
     <h2>看懂这两条曲线，只需要三步</h2>
     <div class="steps"><div class="step"><b>1. 原始匹配分</b><code>zⱼ = Qₜ · Kⱼ / √256</code></div><div class="step"><b>2. 给选中位置加 1</b><code>z′ⱼ = zⱼ + 1；未选中则不变</code></div><div class="step"><b>3. 对全前文归一化</b><code>pⱼ = eᶻⱼ / Σᵢ eᶻⁱ</code></div></div>
@@ -76,7 +77,7 @@
   const add=(parent,tag,attrs,text)=>{const el=document.createElementNS(svgNS,tag);for(const [k,v] of Object.entries(attrs))el.setAttribute(k,String(v));if(text!==undefined)el.textContent=text;parent.append(el);return el};
   const pct=n=>`${(n*100).toFixed(n*100>=1?2:n*100>=.01?3:5)}%`;
   const fmt=n=>n.toFixed(3);
-  let activeBlock=14,activeLayer='27',activeOffset=0;
+  let activeBlock=14,activeLayer='27',activeOffset=234;
   function drawLineChart(svg,series,formatter,readout){
     svg.replaceChildren();const n=series[0].values.length,L=64,R=900,T=18,B=246;
     let low=Math.min(...series.flatMap(s=>s.values)),high=Math.max(...series.flatMap(s=>s.values));
